@@ -1,0 +1,28 @@
+; systemd unit for CoreKit Tracker — /etc/systemd/system/corekit.service
+[Unit]
+Description=CoreKit Tracker project tracker
+After=network.target
+
+[Service]
+Type=simple
+User=corekit
+WorkingDirectory=/opt/corekit
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=3
+
+; bind only to localhost — Caddy terminates TLS and proxies in
+Environment=COREKIT_HOST=127.0.0.1
+Environment=COREKIT_PORT=4580
+Environment=COREKIT_SECURE_COOKIES=1
+Environment=COREKIT_TRUST_PROXY=1
+
+; hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/corekit/data
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

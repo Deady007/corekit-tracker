@@ -1,0 +1,10 @@
+{
+  "name": "corekit",
+  "version": "0.1.0",
+  "description": "Lightweight project management — projects, issues, kanban. Zero dependencies.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": { "node": ">=22.5" }
+}

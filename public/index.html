@@ -1,0 +1,1001 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CoreKit Tracker</title>
+<meta name="theme-color" content="#141414">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/png" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..900&family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ============ BRUTALIST SYSTEM ============
+   raw paper, hard 3px ink borders, offset block shadows, zero radius,
+   construction-sign accents. Nothing floats; everything is nailed down. */
+:root{
+  --paper:#F2EFE8; --paper2:#E9E5DB; --ink:#141414; --dim:#54504a;
+  --yellow:#FFD900; --red:#E63B2E; --blue:#2733E6; --green:#00A651; --white:#FFFFFF;
+  --bd:3px solid var(--ink); --shadow:6px 6px 0 var(--ink); --shadow-sm:4px 4px 0 var(--ink);
+  --mono:'IBM Plex Mono',ui-monospace,monospace; --sans:'Archivo',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--paper)}
+body{font-family:var(--sans);color:var(--ink);font-size:14px;line-height:1.45}
+.mono{font-family:var(--mono)}
+h1,h2,h3,h4{font-variation-settings:'wdth' 122;text-transform:uppercase;letter-spacing:.01em}
+
+button{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  background:var(--white);color:var(--ink);border:var(--bd);padding:9px 14px;cursor:pointer;box-shadow:var(--shadow-sm);border-radius:0}
+button:hover{background:var(--yellow)}
+button:active{transform:translate(4px,4px);box-shadow:none}
+button.primary{background:var(--yellow)}
+button.danger{background:var(--white);color:var(--red)}
+button.bare{box-shadow:none;border:2px solid var(--ink);padding:5px 9px}
+button.bare:active{transform:translate(1px,1px)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--blue);outline-offset:1px}
+input,select,textarea{font-family:var(--mono);font-size:13px;background:var(--white);color:var(--ink);
+  border:var(--bd);border-radius:0;padding:9px 10px;width:100%}
+textarea{min-height:90px;resize:vertical;font-family:var(--sans)}
+label{display:block;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;margin:14px 0 5px}
+::placeholder{color:#9a948a}
+
+/* ---- shell: sidebar + main ---- */
+.shell{display:grid;grid-template-columns:230px 1fr;min-height:100vh}
+aside{background:var(--ink);color:var(--paper);display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+aside .logo{padding:22px 18px;border-bottom:3px solid var(--paper)}
+aside .logo .big{font-variation-settings:'wdth' 125;font-weight:900;font-size:26px;letter-spacing:.01em;line-height:.95}
+aside .logo .big b{color:var(--yellow)}
+aside .logo .tag{font-family:var(--mono);font-size:9px;letter-spacing:.28em;margin-top:6px;color:#8f8a80;text-transform:uppercase}
+aside nav{padding:14px 0;display:flex;flex-direction:column}
+aside nav a{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--paper);text-decoration:none;padding:11px 18px;border-left:6px solid transparent}
+aside nav a:hover{background:#242424}
+aside nav a.on{background:var(--yellow);color:var(--ink);border-left-color:var(--red)}
+aside .plist{flex:1;overflow-y:auto;border-top:2px solid #333;padding:12px 0}
+aside .plist .pl-h{font-family:var(--mono);font-size:9px;letter-spacing:.26em;color:#8f8a80;padding:0 18px 8px;text-transform:uppercase}
+aside .plist a{display:flex;gap:9px;align-items:baseline;color:var(--paper);text-decoration:none;font-size:12.5px;padding:6px 18px}
+aside .plist a:hover{background:#242424}
+aside .plist a .k{font-family:var(--mono);font-size:10px;color:var(--yellow);min-width:36px}
+aside .who{border-top:3px solid var(--paper);padding:14px 18px}
+aside .who .nm{font-weight:700;font-size:13px}
+aside .who .rl{font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;color:var(--yellow)}
+aside .who button{margin-top:10px;width:100%;background:var(--ink);color:var(--paper);border-color:var(--paper);box-shadow:3px 3px 0 var(--paper)}
+aside .who button:hover{background:var(--red);border-color:var(--paper)}
+
+.mainwrap{min-width:0}
+.topbar{display:flex;align-items:center;gap:14px;padding:16px 26px;border-bottom:var(--bd);background:var(--paper);position:sticky;top:0;z-index:30}
+.topbar h1{font-size:22px;font-weight:850}
+.topbar .sub{font-family:var(--mono);font-size:11px;color:var(--dim)}
+.topbar .sp{flex:1}
+.bellwrap{position:relative}
+.bell .dot{position:absolute;top:-8px;right:-8px;background:var(--red);color:#fff;border:2px solid var(--ink);font-size:10px;font-weight:700;padding:1px 6px}
+.ndrop{position:absolute;top:110%;right:0;width:380px;background:var(--white);border:var(--bd);box-shadow:var(--shadow);z-index:60;display:none;max-height:60vh;overflow-y:auto}
+.ndrop.open{display:block}
+.ndrop .nitem{padding:10px 14px;border-bottom:2px solid var(--paper2);font-size:12.5px;cursor:pointer}
+.ndrop .nitem:hover{background:var(--paper)}
+.ndrop .nitem.unread{border-left:6px solid var(--yellow)}
+.ndrop .nitem .nt{font-family:var(--mono);font-size:9.5px;color:var(--dim);margin-top:2px}
+main{padding:24px 26px 90px}
+
+/* ---- tiles ---- */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px;margin-bottom:22px}
+.tile{background:var(--white);border:var(--bd);box-shadow:var(--shadow);padding:14px 16px 12px;position:relative}
+.tile .n{font-variation-settings:'wdth' 122;font-weight:900;font-size:34px;line-height:1}
+.tile .t{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;margin-top:6px}
+.tile .s{font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:2px}
+.tile.warn{background:var(--red);color:#fff}
+.tile.warn .s{color:#ffd7d3}
+.tile.go{background:var(--green);color:#fff}
+.tile.go .s{color:#c9f5dd}
+.tile.hot{background:var(--yellow)}
+
+/* ---- blocks & tables ---- */
+.block{background:var(--white);border:var(--bd);box-shadow:var(--shadow);margin-bottom:22px}
+.block .bhead{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 16px;border-bottom:var(--bd);background:var(--ink);color:var(--paper)}
+.block .bhead h2{font-size:13px;font-weight:800;letter-spacing:.12em}
+.block .bhead .note{font-family:var(--mono);font-size:10px;color:#a8a297}
+.block .bpad{padding:16px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}
+@media(max-width:1100px){.grid2{grid-template-columns:1fr}}
+table{border-collapse:collapse;width:100%}
+th,td{padding:9px 14px;text-align:left;border-bottom:2px solid var(--paper2);font-size:13px}
+th{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;background:var(--paper2)}
+td.mono{font-size:11.5px}
+.stamp{display:inline-block;font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  border:2px solid var(--ink);padding:2px 7px;background:var(--white)}
+.stamp.High{background:var(--red);color:#fff}
+.stamp.Medium{background:var(--yellow)}
+.stamp.Low{background:var(--paper2)}
+.stamp.Done{background:var(--green);color:#fff}
+.stamp.Backlog{background:var(--white)}
+.stamp.InProgress{background:var(--yellow)}
+.stamp.InReview{background:var(--blue);color:#fff}
+.stamp.Bug{background:var(--red);color:#fff}
+.stamp.Issue{background:var(--blue);color:#fff}
+.stamp.Story{background:var(--white)}
+.late{color:var(--red);font-family:var(--mono);font-weight:700;font-size:11px}
+.empty{color:var(--dim);font-family:var(--mono);font-size:12px;padding:22px;text-align:center;text-transform:uppercase;letter-spacing:.1em}
+
+/* ---- projects grid ---- */
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px}
+.pcard{background:var(--white);border:var(--bd);box-shadow:var(--shadow);padding:16px;cursor:pointer}
+.pcard:hover{background:var(--yellow)}
+.pcard:active{transform:translate(4px,4px);box-shadow:none}
+.pcard .key{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.14em;background:var(--ink);color:var(--paper);display:inline-block;padding:2px 8px}
+.pcard h3{font-size:17px;font-weight:800;margin:8px 0 3px}
+.pcard .desc{color:var(--dim);font-size:12.5px;min-height:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pcard .foot{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+
+/* ---- kanban ---- */
+.board-head{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+.board-head select,.board-head input{width:auto}
+.board-head input[type=search]{width:220px}
+.fchip{font-family:var(--mono);font-size:10.5px;font-weight:700;padding:6px 11px;border:2px solid var(--ink);background:var(--white);cursor:pointer;letter-spacing:.08em;text-transform:uppercase;box-shadow:none}
+.fchip.on{background:var(--ink);color:var(--yellow)}
+.kanban{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;align-items:start}
+@media(max-width:1050px){.kanban{grid-template-columns:repeat(2,1fr)}}
+.kcol{border:var(--bd);background:var(--paper2);box-shadow:var(--shadow)}
+.kcol.dragover{outline:4px dashed var(--blue);outline-offset:-6px}
+.kcol .khead{display:flex;justify-content:space-between;align-items:center;padding:9px 12px;background:var(--ink);color:var(--paper);border-bottom:var(--bd)}
+.kcol .khead h4{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.16em}
+.kcol .khead .cnt{font-family:var(--mono);font-size:11px;font-weight:700;background:var(--kc);color:var(--ink);padding:0 8px;border:2px solid var(--paper)}
+.kcol[data-status="In Review"] .khead .cnt{color:#fff}
+.kcol[data-status="Done"] .khead .cnt{color:#fff}
+.klist{padding:12px;display:flex;flex-direction:column;gap:12px;min-height:70px}
+.card{background:var(--white);border:var(--bd);padding:10px 12px;cursor:grab;box-shadow:var(--shadow-sm)}
+.card:hover{background:#FFFBE6}
+.card:active{cursor:grabbing}
+.card.dragging{opacity:.35}
+.card .top{display:flex;justify-content:space-between;gap:8px;font-family:var(--mono);font-size:10px;font-weight:700}
+.card .num{letter-spacing:.1em}
+.card .nm{font-size:13.5px;font-weight:600;margin:6px 0 8px;line-height:1.3}
+.card .bot{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.card .meta{font-family:var(--mono);font-size:9.5px;color:var(--dim);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.card .who{width:24px;height:24px;background:var(--ink);color:var(--yellow);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:9px;font-weight:700}
+
+/* ---- drawer & modal ---- */
+.overlay{position:fixed;inset:0;background:rgba(20,20,20,.45);z-index:50;display:none}
+.overlay.open{display:block}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:560px;max-width:96vw;background:var(--paper);border-left:var(--bd);z-index:51;
+  transform:translateX(102%);transition:transform .15s ease;display:flex;flex-direction:column}
+.drawer.open{transform:none}
+.drawer .dhead{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:var(--ink);color:var(--paper)}
+.drawer .dhead .num{font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.12em;color:var(--yellow)}
+.drawer .dbody{padding:4px 18px 18px;overflow-y:auto;flex:1}
+.drawer .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.drawer .dfoot{padding:12px 18px;border-top:var(--bd);display:flex;gap:10px;justify-content:space-between;background:var(--paper2)}
+.subsec{margin-top:20px;border-top:var(--bd);padding-top:6px}
+.comment{padding:9px 0;border-bottom:2px solid var(--paper2)}
+.comment .ch{font-family:var(--mono);font-size:10px;color:var(--dim)}
+.comment .ch b{color:var(--ink)}
+.comment p{font-size:13px;margin-top:2px}
+.comment img{max-width:100%;max-height:220px;border:var(--bd);margin-top:6px;display:block;cursor:zoom-in}
+.pending-img{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:10.5px;background:var(--yellow);border:2px solid var(--ink);padding:4px 8px;margin-top:8px}
+.hist-row{display:flex;gap:10px;padding:6px 0;border-bottom:2px solid var(--paper2);font-size:12px;align-items:baseline}
+.hist-row .ht{font-family:var(--mono);font-size:9.5px;color:var(--dim);min-width:86px}
+.hist-row b{font-weight:700}
+.hist-row .arrow{font-family:var(--mono);color:var(--dim)}
+.file-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:2px solid var(--paper2);font-size:12.5px}
+.file-row a{color:var(--blue);font-weight:600;text-decoration:none;border-bottom:2px solid var(--blue)}
+.file-row .fs{font-family:var(--mono);font-size:10px;color:var(--dim)}
+.file-row .sp{flex:1}
+.modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-46%);width:500px;max-width:94vw;background:var(--paper);
+  border:var(--bd);box-shadow:10px 10px 0 var(--ink);z-index:52;display:none}
+.modal.open{display:block}
+.modal .mhead{padding:12px 18px;background:var(--ink);color:var(--yellow);font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase}
+.modal .mbody{padding:6px 18px 18px;max-height:70vh;overflow-y:auto}
+.modal .mfoot{padding:12px 18px;border-top:var(--bd);display:flex;justify-content:flex-end;gap:10px;background:var(--paper2)}
+.formerr{color:var(--red);font-family:var(--mono);font-size:11px;font-weight:700;margin-top:10px;min-height:14px}
+
+/* ---- login ---- */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
+  background:repeating-linear-gradient(-45deg,var(--paper) 0 26px,var(--paper2) 26px 30px)}
+.login{width:400px;background:var(--white);border:var(--bd);box-shadow:12px 12px 0 var(--ink);padding:30px}
+.login .big{font-variation-settings:'wdth' 125;font-weight:900;font-size:38px;line-height:.95;text-transform:uppercase}
+.login .big b{color:transparent;-webkit-text-stroke:2px var(--ink)}
+.login .tag{font-family:var(--mono);font-size:9.5px;letter-spacing:.3em;color:var(--dim);margin:8px 0 4px;text-transform:uppercase}
+
+/* ---- product lab theme (illustration-flavored, applies on product views) ---- */
+body.theme-product{background:#F7F2E7}
+.theme-product .mainwrap{
+  background:
+    radial-gradient(circle at 12% 8%, rgba(108,76,241,.07) 0 90px, transparent 90px),
+    radial-gradient(circle at 88% 30%, rgba(255,122,100,.08) 0 70px, transparent 70px),
+    radial-gradient(circle at 70% 85%, rgba(43,180,154,.07) 0 110px, transparent 110px),
+    #F7F2E7}
+.theme-product .topbar{background:#F7F2E7;border-bottom:2px solid #2A2440}
+.theme-product .topbar h1{color:#2A2440}
+.prod-hero{position:relative;border:2px solid #2A2440;border-radius:20px;background:#FFFDF7;
+  padding:26px 28px 22px;margin-bottom:24px;overflow:hidden;box-shadow:0 10px 0 rgba(42,36,64,.08)}
+.prod-hero h2{font-size:26px;font-weight:850;color:#2A2440;text-transform:uppercase;font-variation-settings:'wdth' 118}
+.prod-hero h2 b{color:#6C4CF1}
+.prod-hero .ph-sub{font-size:13.5px;color:#6b6480;margin-top:4px;max-width:520px}
+.prod-hero svg{position:absolute;right:14px;top:50%;transform:translateY(-50%);opacity:.9}
+@media(max-width:800px){.prod-hero svg{display:none}}
+.prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:22px}
+.prodcard{border:2px solid #2A2440;border-radius:18px;background:#FFFDF7;padding:20px;cursor:pointer;
+  box-shadow:0 8px 0 rgba(42,36,64,.10);transition:transform .12s}
+.prodcard:hover{transform:translateY(-3px) rotate(-.4deg)}
+.prodcard .pc-top{display:flex;gap:14px;align-items:center}
+.prodcard .pc-ill{width:64px;height:64px;flex-shrink:0;border:2px solid #2A2440;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;background:var(--pcc,#EFE9FF)}
+.prodcard h3{font-size:17px;font-weight:800;color:#2A2440;text-transform:uppercase}
+.prodcard .pc-key{font-family:var(--mono);font-size:10px;color:#6C4CF1;letter-spacing:.14em}
+.prodcard .pc-desc{font-size:12.5px;color:#6b6480;margin-top:2px}
+.pc-progress{margin-top:16px}
+.pc-progress .lbl{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:#6b6480;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px}
+.pc-bar{height:14px;border:2px solid #2A2440;border-radius:9px;background:#F1EBDD;overflow:hidden}
+.pc-bar i{display:block;height:100%;background:repeating-linear-gradient(-55deg,#6C4CF1 0 10px,#8266F5 10px 20px);border-radius:6px 0 0 6px}
+.pc-mini{display:flex;gap:6px;margin-top:12px}
+.pc-mini span{flex:1;text-align:center;font-family:var(--mono);font-size:10px;border:2px solid #2A2440;border-radius:8px;padding:5px 2px;background:#fff}
+.pc-mini .n{display:block;font-size:15px;font-weight:800}
+.pc-sugg{margin-top:14px;border-top:2px dashed #D9D2C2;padding-top:10px}
+.pc-sugg li{list-style:none;font-size:12px;color:#2A2440;padding:3px 0 3px 22px;position:relative}
+.pc-sugg li::before{content:"✏";position:absolute;left:0}
+.pc-sugg li.warn::before{content:"⚡"}
+.pc-target{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:700;border:2px solid #2A2440;border-radius:8px;padding:3px 9px;background:#FFD900;margin-top:2px}
+.pc-target.passed{background:#FF7A64;color:#fff}
+/* product-themed board */
+.theme-product .kcol{border-radius:16px;border-width:2px;border-color:#2A2440;background:#F1EBDD;box-shadow:0 8px 0 rgba(42,36,64,.10)}
+.theme-product .kcol .khead{background:#2A2440;border-radius:13px 13px 0 0;border-bottom-width:2px}
+.theme-product .card{border-radius:12px;border-width:2px;border-color:#2A2440;box-shadow:0 4px 0 rgba(42,36,64,.12);background:#FFFDF7}
+.theme-product button.primary{background:#6C4CF1;color:#fff;border-color:#2A2440}
+.theme-product .fchip.on{background:#6C4CF1;color:#fff}
+
+/* ---- mobile ---- */
+.menu-btn{display:none}
+@media(max-width:900px){
+  .shell{grid-template-columns:1fr}
+  aside{position:fixed;left:0;top:0;bottom:0;width:260px;max-width:82vw;height:100dvh;z-index:80;
+    transform:translateX(-103%);transition:transform .16s ease;box-shadow:8px 0 0 rgba(20,20,20,.25)}
+  aside.open{transform:none}
+  .menu-btn{display:inline-block}
+  .topbar{padding:12px 14px;gap:10px}
+  .topbar h1{font-size:17px}
+  .topbar .sub{display:none}
+  main{padding:16px 14px 70px}
+  .ndrop{position:fixed;top:64px;left:10px;right:10px;width:auto}
+  .drawer{width:100vw;max-width:100vw}
+  .drawer .row2{grid-template-columns:1fr 1fr}
+  .grid2{grid-template-columns:1fr}
+  .tiles{grid-template-columns:repeat(2,1fr);gap:10px}
+  .tile .n{font-size:26px}
+  .board-head input[type=search]{width:100%;order:9}
+}
+/* kanban status tabs — mobile shows one column at a time */
+.ktabs{display:none}
+@media(max-width:700px){
+  .ktabs{display:flex;gap:8px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px}
+  .ktabs .fchip{white-space:nowrap}
+  .ktabs .fchip .kn{display:inline-block;min-width:16px;text-align:center;background:var(--yellow);color:var(--ink);margin-left:6px;padding:0 3px;border:1px solid var(--ink)}
+  .ktabs .fchip.on .kn{background:var(--paper)}
+  .kanban{display:block}
+  .kanban .kcol{display:none}
+  .kanban .kcol.active{display:block}
+
+  /* tables become stacked cards — no horizontal scrolling */
+  table.cardify thead{display:none}
+  table.cardify, table.cardify tbody{display:block}
+  table.cardify tr{display:block;border-bottom:var(--bd);padding:10px 14px}
+  table.cardify tr:last-child{border-bottom:none}
+  table.cardify td{display:flex;justify-content:space-between;align-items:baseline;gap:12px;border:none;padding:3px 0;text-align:right}
+  table.cardify td::before{content:attr(data-l);font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);text-align:left;flex-shrink:0}
+  table.cardify td:first-child{font-size:14.5px;font-weight:600;text-align:left;justify-content:flex-start}
+  table.cardify td:first-child::before{display:none}
+  table.cardify td:empty{display:none}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+"use strict";
+const $=(s,el=document)=>el.querySelector(s), $$=(s,el=document)=>[...el.querySelectorAll(s)];
+const esc=(s)=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const STATUSES=["Backlog","In Progress","In Review","Done"];
+const KC={Backlog:"#F2EFE8","In Progress":"#FFD900","In Review":"#2733E6",Done:"#00A651"};
+const fmtD=(d)=>d?new Date(d).toLocaleDateString("en-GB",{day:"numeric",month:"short"}):"";
+const fmtSize=(b)=>b>1048576?(b/1048576).toFixed(1)+" MB":Math.max(1,Math.round(b/1024))+" KB";
+const initials=(n)=>String(n||"?").split(/\s+/).map(w=>w[0]).slice(0,2).join("").toUpperCase();
+const stampCls=(v)=>String(v||"").replace(/\s/g,"");
+const isPast=(d)=>d&&new Date(d)<new Date(new Date().toDateString());
+
+let ME=null, USERS=[], PROJECTS=[], STORIES=[], NOTIFS=[], BOARD_STORIES=[], BOARD_CRIT=new Map();
+let FILTER={type:"all",assignee:"",q:""};
+const isLead=()=>ME&&(ME.role==="ADMIN"||ME.role==="DEVLEAD");
+
+async function api(path,opts={}){
+  const res=await fetch(path,{...opts,headers:{...(opts.body?{"Content-Type":"application/json"}:{}),...(opts.headers||{})}});
+  if(res.status===401&&!path.includes("/auth/")){ME=null;render();throw new Error("Session expired — sign in again");}
+  const body=await res.json().catch(()=>null);
+  if(!res.ok) throw new Error(body?.error||("HTTP "+res.status));
+  return body;
+}
+
+function route(){
+  const h=location.hash||"#/dashboard";
+  const m=/^#\/board\/(\d+)/.exec(h);
+  if(m) return {view:"board",projectId:Number(m[1])};
+  const rt=/^#\/reset\/([\w-]+)/.exec(h);
+  if(rt) return {view:"reset",token:rt[1]};
+  if(h.startsWith("#/products")) return {view:"products"};
+  if(h.startsWith("#/clients")||h.startsWith("#/projects")) return {view:"clients"};
+  if(h.startsWith("#/command")) return {view:"command"};
+  if(h.startsWith("#/team")) return {view:"team"};
+  return {view:"dashboard"};
+}
+window.addEventListener("hashchange",()=>render());
+
+// ---------- boot ----------
+async function boot(){
+  const st=await api("/api/auth/status");
+  if(!st.authenticated){ME=null;render();return;}
+  const users=await api("/api/users");
+  ME=users.find(u=>u.username===st.username);
+  USERS=users.filter(u=>u.enabled);
+  PROJECTS=await api("/api/pm-projects");
+  await refreshNotifs();
+  render();
+}
+async function refreshNotifs(){
+  if(!ME?.id) return;
+  try{NOTIFS=await api("/api/notifications/user/"+ME.id);}catch{}
+  const b=$("#nBadge"); if(b){const u=NOTIFS.filter(n=>!n.read).length; b.outerHTML=badgeHtml(u);}
+}
+setInterval(refreshNotifs,45_000);
+const badgeHtml=(u)=>u?`<span class="dot" id="nBadge">${u}</span>`:`<span id="nBadge"></span>`;
+
+// ---------- render shell ----------
+function render(){
+  const app=$("#app");
+  const r0=route();
+  if(r0.view==="reset"){app.innerHTML=resetView(r0.token);return;}
+  if(!ME){app.innerHTML=loginView();return;}
+  const r=r0;
+  const unread=NOTIFS.filter(n=>!n.read).length;
+  const boardProject=r.view==="board"?PROJECTS.find(p=>p.id===r.projectId):null;
+  const titles={dashboard:"My Dashboard",command:"Command",products:"Product Lab",clients:"Client Projects",team:"Team",board:boardProject?.name||"Board"};
+  document.body.classList.toggle("theme-product", r.view==="products"||(boardProject?.category==="product"));
+  const products=PROJECTS.filter(p=>p.category==="product"), clients=PROJECTS.filter(p=>p.category!=="product");
+  const plink=(p)=>`<a href="#/board/${p.id}"><span class="k">${esc(p.key)}</span>${esc(p.name)}</a>`;
+  app.innerHTML=`
+  <div class="shell">
+    <aside>
+      <div class="logo"><div class="big">CORE<b>KIT</b></div><div class="tag">Trivyah Tech · Tracker</div></div>
+      <nav>
+        <a href="#/dashboard" class="${r.view==="dashboard"?"on":""}">Dashboard</a>
+        ${isLead()?`<a href="#/command" class="${r.view==="command"?"on":""}">Command</a>`:""}
+        <a href="#/products" class="${r.view==="products"?"on":""}">Products</a>
+        <a href="#/clients" class="${r.view==="clients"?"on":""}">Clients</a>
+        ${ME.role==="ADMIN"?`<a href="#/team" class="${r.view==="team"?"on":""}">Team</a>`:""}
+      </nav>
+      <div class="plist">
+        ${products.length?`<div class="pl-h">Products</div>${products.map(plink).join("")}`:""}
+        ${clients.length?`<div class="pl-h" style="margin-top:8px">Clients</div>${clients.map(plink).join("")}`:""}
+      </div>
+      <div class="who"><div class="nm">${esc(ME.displayName)}</div><div class="rl">${esc(ME.role)}</div>
+        <button data-act="logout">Log out</button></div>
+    </aside>
+    <div class="mainwrap">
+      <div class="topbar"><button class="bare menu-btn" data-act="menu" aria-label="Menu">☰</button><h1>${esc(titles[r.view])}</h1>
+        <span class="sub">${r.view==="board"?esc(PROJECTS.find(p=>p.id===r.projectId)?.key||""):""}</span>
+        <span class="sp"></span>
+        <div class="bellwrap"><button class="bare" data-act="bell">▤ Inbox${badgeHtml(unread)}</button>
+          <div class="ndrop" id="ndrop">${NOTIFS.length?NOTIFS.map(n=>`
+            <div class="nitem ${n.read?"":"unread"}" data-act="notif" data-story="${n.storyId||""}">${esc(n.text)}
+            <div class="nt">${fmtD(n.createdDate)}</div></div>`).join("")
+            :'<div class="empty">Inbox zero</div>'}</div></div>
+      </div>
+      <main id="main"></main>
+    </div>
+  </div>
+  <div class="overlay" id="overlay" data-act="close"></div>
+  <div class="drawer" id="drawer"></div>
+  <div class="modal" id="modal"></div>`;
+  if(r.view==="dashboard") renderDashboard();
+  else if(r.view==="command") renderCommand();
+  else if(r.view==="products") renderProducts();
+  else if(r.view==="clients") renderProjects();
+  else if(r.view==="team") renderTeam();
+  else renderBoard(r.projectId);
+}
+function closePanels(){$("#overlay")?.classList.remove("open");$("#drawer")?.classList.remove("open");$("#modal")?.classList.remove("open");$("aside")?.classList.remove("open");}
+
+// ---------- global event delegation (robust: no per-node handlers) ----------
+document.addEventListener("click",async(e)=>{
+  const el=e.target.closest("[data-act]");
+  if(!el) return;
+  const act=el.dataset.act;
+  if(act==="menu"){$("aside").classList.toggle("open");$("#overlay").classList.toggle("open",$("aside").classList.contains("open"));}
+  else if(act==="logout"){await api("/api/auth/logout",{method:"POST"});ME=null;render();}
+  else if(act==="bell"){
+    $("#ndrop").classList.toggle("open");
+    const unread=NOTIFS.filter(n=>!n.read);
+    for(const n of unread) api(`/api/notifications/${n.id}/read`,{method:"PUT"}).catch(()=>{});
+    NOTIFS=NOTIFS.map(n=>({...n,read:1}));
+    const b=$("#nBadge"); if(b) b.outerHTML=badgeHtml(0);
+  }
+  else if(act==="notif"&&el.dataset.story){
+    try{const s=await api("/api/pm-stories/"+el.dataset.story);
+      $("#ndrop").classList.remove("open");
+      location.hash="#/board/"+s.project.id;
+      setTimeout(()=>storyDrawer(s,s.project.id),150);
+    }catch{}
+  }
+  else if(act==="close") closePanels();
+  else if(act==="del-project"){
+    if(!confirm(`Delete project "${el.dataset.name}" AND all its stories, comments and files? This cannot be undone.`))return;
+    try{await api("/api/pm-projects/"+el.dataset.id,{method:"DELETE"});
+      PROJECTS=await api("/api/pm-projects");render();}
+    catch(err){alert(err.message);}
+  }
+  else if(act==="open-project") location.hash="#/board/"+el.dataset.id;
+  else if(act==="new-project") projectModal(el.dataset.cat||"client");
+  else if(act==="project-settings") projectSettingsModal(PROJECTS.find(p=>p.id===Number(el.dataset.id)));
+  else if(act==="new-user") userModal();
+  else if(act==="new-story") storyDrawer(null,Number(el.dataset.project));
+  else if(act==="open-story"){
+    const s=BOARD_STORIES.find(x=>x.id===Number(el.dataset.id))||STORIES.find(x=>x.id===Number(el.dataset.id));
+    if(s) storyDrawer(s,s.project?.id||s.projectId);
+  }
+});
+document.addEventListener("keydown",(e)=>{if(e.key==="Escape")closePanels();});
+
+// ---------- login ----------
+function loginView(){setTimeout(()=>{
+  $("#loginForm").onsubmit=async(e)=>{e.preventDefault();
+    try{await api("/api/auth/login",{method:"POST",body:JSON.stringify({username:$("#lu").value,password:$("#lp").value})});boot();}
+    catch(err){$("#lerr").textContent=/401|credential/i.test(err.message)?"WRONG USERNAME OR PASSWORD":err.message;}};
+  $("#forgot").onclick=async(e)=>{e.preventDefault();
+    const uname=$("#lu").value.trim()||prompt("Your username or email:");
+    if(!uname)return;
+    await api("/api/auth/forgot",{method:"POST",body:JSON.stringify({username:uname})}).catch(()=>{});
+    alert("If that account has an email on file, a reset link was sent. Otherwise ask your admin for a reset link.");};
+},0);
+return `<div class="login-wrap"><form class="login" id="loginForm">
+  <div class="big">CORE<b>KIT</b></div><div class="tag">Tracker · Projects · Issues · Kanban</div>
+  <label>Username</label><input id="lu" autocomplete="username" required>
+  <label>Password</label><input id="lp" type="password" autocomplete="current-password" required>
+  <div class="formerr" id="lerr"></div>
+  <button class="primary" style="width:100%;margin-top:8px">Sign in →</button>
+  <div style="margin-top:14px;text-align:center"><a href="#" id="forgot" style="font-family:var(--mono);font-size:11px;color:var(--dim)">Forgot password?</a></div>
+</form></div>`;}
+
+function resetView(token){setTimeout(()=>{
+  $("#resetForm").onsubmit=async(e)=>{e.preventDefault();
+    if($("#rp1").value!==$("#rp2").value){$("#rerr").textContent="PASSWORDS DON'T MATCH";return;}
+    try{
+      await api("/api/auth/reset",{method:"POST",body:JSON.stringify({token,password:$("#rp1").value})});
+      alert("Password set — sign in with it now.");
+      location.hash="";location.reload();
+    }catch(err){$("#rerr").textContent=err.message;}};
+},0);
+return `<div class="login-wrap"><form class="login" id="resetForm">
+  <div class="big">CORE<b>KIT</b></div><div class="tag">Set a new password</div>
+  <label>New password</label><input id="rp1" type="password" autocomplete="new-password" required>
+  <label>Repeat it</label><input id="rp2" type="password" autocomplete="new-password" required>
+  <div class="formerr" id="rerr"></div>
+  <button class="primary" style="width:100%;margin-top:8px">Set password →</button>
+</form></div>`;}
+
+// ---------- dashboard ----------
+let ANALYTICS=null;
+const tiles=(arr)=>arr.map(([n,t,s,cls])=>`<div class="tile ${cls||""}"><div class="n">${n}</div><div class="t">${t}</div><div class="s">${s||""}</div></div>`).join("");
+
+async function renderDashboard(){
+  STORIES=await api("/api/pm-stories"); // server-side scoped to my visibility
+  const open=STORIES.filter(s=>s.storyStatus!=="Done");
+  const mine=open.filter(s=>s.assignedTo?.id===ME.id);
+  const week=new Date(Date.now()+7*86400e3).toISOString().slice(0,10);
+  let html="";
+  // personal section (everyone)
+  const myOver=mine.filter(s=>isPast(s.dueDate));
+  const dueSoon=mine.filter(s=>s.dueDate&&!isPast(s.dueDate)&&s.dueDate<=week);
+  html+=`<div class="tiles">${tiles([
+    [mine.length,"My open items","assigned to me"],
+    [dueSoon.length,"Due this week",""],
+    [myOver.length,"My overdue","",myOver.length?"warn":"go"],
+    [STORIES.filter(s=>s.assignedTo?.id===ME.id&&s.storyStatus==="Done").length,"Done total","all time"],
+  ])}</div>
+  <div class="block"><div class="bhead"><h2>My queue</h2><div class="note">everything assigned to me, urgent first</div></div>
+    ${mine.length?`<table class="cardify"><thead><tr><th>Item</th><th>Project</th><th>Type</th><th>Status</th><th>Priority</th><th>Due</th></tr></thead><tbody>
+    ${mine.sort((a,b)=>String(a.dueDate||"9999").localeCompare(String(b.dueDate||"9999")))
+      .map(s=>`<tr data-act="open-story" data-id="${s.id}" style="cursor:pointer">
+      <td><span class="mono" style="font-size:11px">${esc(s.number)}</span> ${esc(s.name)}</td>
+      <td class="mono" data-l="Project">${esc(s.project?.key||"")}</td>
+      <td data-l="Type"><span class="stamp ${stampCls(s.type)}">${esc(s.type)}</span></td>
+      <td data-l="Status"><span class="stamp ${stampCls(s.storyStatus)}">${esc(s.storyStatus)}</span></td>
+      <td data-l="Priority"><span class="stamp ${stampCls(s.priority)}">${esc(s.priority)}</span></td>
+      <td data-l="Due">${s.dueDate?(isPast(s.dueDate)?`<span class="late">${fmtD(s.dueDate)} ⚑</span>`:fmtD(s.dueDate)):"—"}</td></tr>`).join("")}</tbody></table>`
+    :'<div class="empty">Nothing assigned to you. Enjoy it while it lasts.</div>'}</div>`;
+  $("#main").innerHTML=html;
+}
+
+// ---------- command (admin/devlead: performance & allocation) ----------
+async function renderCommand(){
+  if(!isLead()){location.hash="#/dashboard";return;}
+  [STORIES,ANALYTICS]=await Promise.all([api("/api/pm-stories"),api("/api/analytics")]);
+  const open=STORIES.filter(s=>s.storyStatus!=="Done");
+  let html="";
+  {
+    const overdue=open.filter(s=>isPast(s.dueDate));
+    const unassigned=open.filter(s=>!s.assignedTo);
+    const devs=USERS.filter(u=>open.some(s=>s.assignedTo?.id===u.id));
+    html+=`<div class="tiles">${tiles([
+      [open.length,"Open items","across "+PROJECTS.length+" projects"],
+      [overdue.length,"Overdue",overdue.length?"needs action":"clean board",overdue.length?"warn":"go"],
+      [unassigned.length,"Unassigned","waiting for an owner",unassigned.length?"hot":""],
+      [devs.length,"People loaded","have open work"],
+    ])}</div>
+    <div class="grid2">
+      <div class="block"><div class="bhead"><h2>Team load</h2><div class="note">open items per person</div></div>
+        <table class="cardify"><thead><tr><th>Person</th><th>Open</th><th>Pts</th><th>Overdue</th><th>Doing now</th></tr></thead><tbody>
+        ${devs.map(u=>{const m=open.filter(s=>s.assignedTo?.id===u.id);
+          const od=m.filter(s=>isPast(s.dueDate)).length;
+          const doing=m.find(s=>s.storyStatus==="In Progress");
+          return `<tr><td><b>${esc(u.displayName)}</b></td><td class="mono" data-l="Open">${m.length}</td>
+          <td class="mono" data-l="Points">${m.reduce((n,s)=>n+(s.storyPoints||0),0)}</td>
+          <td data-l="Overdue">${od?`<span class="late">${od}</span>`:"—"}</td>
+          <td data-l="Doing now">${doing?`<span class="mono" style="font-size:11px">${esc(doing.number)}</span> ${esc(doing.name).slice(0,28)}`:"<span style='color:var(--dim)'>idle</span>"}</td></tr>`;}).join("")}
+        </tbody></table>${devs.length?"":'<div class="empty">nobody has open work</div>'}</div>
+      <div class="block"><div class="bhead"><h2>Project health</h2><div class="note">items by status</div></div>
+        <table class="cardify"><thead><tr><th>Project</th><th>Back</th><th>Prog</th><th>Rev</th><th>Done</th><th>Overdue</th></tr></thead><tbody>
+        ${PROJECTS.map(p=>{const ps=STORIES.filter(s=>s.project?.id===p.id);
+          const c=(st)=>ps.filter(s=>s.storyStatus===st).length;
+          const od=ps.filter(s=>s.storyStatus!=="Done"&&isPast(s.dueDate)).length;
+          return `<tr><td data-act="open-project" data-id="${p.id}" style="cursor:pointer"><b>${esc(p.key)}</b> ${esc(p.name).slice(0,24)}</td>
+          <td class="mono" data-l="Backlog">${c("Backlog")}</td><td class="mono" data-l="In progress">${c("In Progress")}</td><td class="mono" data-l="In review">${c("In Review")}</td>
+          <td class="mono" data-l="Done">${c("Done")}</td><td data-l="Overdue">${od?`<span class="late">${od}</span>`:"—"}</td></tr>`;}).join("")}</tbody></table></div>
+    </div>`;
+  }
+  // effort scoreboard + critical items
+  const crit=(ANALYTICS?.stories||[]).filter(a=>a.critical);
+  {
+    const devsRanked=ANALYTICS?.devs||[];
+    html+=`<div class="grid2">
+      <div class="block"><div class="bhead"><h2>Effort scoreboard</h2><div class="note">points earned − delay/rework penalties</div></div>
+        ${devsRanked.length?`<table class="cardify"><thead><tr><th>Dev</th><th>Score</th><th>Done</th><th>On time</th><th>Late</th><th>Rework</th><th>Penalty</th></tr></thead><tbody>
+        ${devsRanked.map((d,i)=>`<tr><td><b>${i===0?"🏆 ":""}${esc(d.displayName)}</b></td>
+          <td data-l="Score"><span class="stamp ${d.score<0?"High":"Done"}" style="font-size:12px">${d.score}</span></td>
+          <td class="mono" data-l="Done">${d.done}</td><td class="mono" data-l="On time">${d.onTime}</td>
+          <td data-l="Late">${d.late?`<span class="late">${d.late}</span>`:"—"}</td>
+          <td class="mono" data-l="Rework">${d.reworked||"—"}</td>
+          <td data-l="Penalty">${d.penalties?`<span class="late">−${d.penalties}</span>`:"—"}</td></tr>`).join("")}</tbody></table>`
+        :'<div class="empty">No scored work yet</div>'}</div>
+      <div class="block"><div class="bhead"><h2>⚠ Critical items</h2><div class="note">churning or badly delayed</div></div>
+        ${crit.length?`<table class="cardify"><thead><tr><th>Item</th><th>Owner</th><th>Why</th></tr></thead><tbody>
+        ${crit.slice(0,12).map(a=>{const u=USERS.find(x=>x.id===a.assignedToId);
+          return `<tr data-act="open-story" data-id="${a.id}" style="cursor:pointer">
+          <td><span class="mono" style="font-size:11px">${esc(a.number)}</span> ${esc(a.name).slice(0,32)}</td>
+          <td data-l="Owner">${esc(u?.displayName||"—")}</td>
+          <td data-l="Why"><span class="late">${esc(a.criticalReasons.join(" · "))}</span></td></tr>`;}).join("")}</tbody></table>`
+        :'<div class="empty">Nothing critical. Smooth sailing.</div>'}</div>
+    </div>`;
+  }
+  $("#main").innerHTML=html;
+}
+
+// ---------- product lab (illustration-themed) ----------
+const PROD_ILLS=[ // hand-drawn doodle marks, one per product (cycled)
+  `<svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#2A2440" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="16" width="13" height="13" rx="2"/><rect x="14" y="7" width="13" height="13" rx="2" fill="#FFD900"/><path d="M25 29l7 7M32 29l-7 7"/></svg>`,
+  `<svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#2A2440" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="15" cy="13" r="6" fill="#FF7A64"/><path d="M5 33c1-7 5-10 10-10s9 3 10 10"/><circle cx="30" cy="16" r="4.5" fill="#FFD900"/><path d="M24 33c.7-5 3-7.5 6-7.5s5.3 2.5 6 7.5"/></svg>`,
+  `<svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#2A2440" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="14" width="26" height="17" rx="3" fill="#B9F0E5"/><path d="M7 21h26M13 14V9a3 3 0 013-3h8a3 3 0 013 3v5"/><circle cx="20" cy="26" r="2.6" fill="#FFD900"/></svg>`,
+  `<svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#2A2440" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4c6 5 8 12 8 18l-8 6-8-6c0-6 2-13 8-18z" fill="#E4DBFF"/><circle cx="20" cy="16" r="3.5" fill="#FFD900"/><path d="M12 28l-4 8M28 28l4 8M20 30v7"/></svg>`,
+];
+const HERO_ILL=`<svg width="230" height="120" viewBox="0 0 230 120" fill="none" stroke="#2A2440" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="12" y="48" width="42" height="42" rx="6" fill="#E4DBFF"/><rect x="30" y="26" width="42" height="42" rx="6" fill="#FFD900"/>
+  <path d="M96 84c0-18 12-30 28-30 3-12 22-16 30-5 12-4 24 4 24 16 10 2 14 20-2 24z" fill="#FFFDF7"/>
+  <path d="M120 40l4-12 4 12M188 24l3-9 3 9" /><circle cx="163" cy="99" r="9" fill="#B9F0E5"/><path d="M150 108h60"/>
+  <path d="M84 108c14-8 30-8 44 0" stroke="#FF7A64"/></svg>`;
+
+async function renderProducts(){
+  const products=PROJECTS.filter(p=>p.category==="product");
+  const year=new Date().getFullYear();
+  let an=null, stories=[];
+  try{[stories,an]=await Promise.all([api("/api/pm-stories"),api("/api/analytics")]);}catch{}
+  const critByProject=new Map();
+  for(const a of (an?.stories||[])) if(a.critical) critByProject.set(a.projectId,(critByProject.get(a.projectId)||0)+1);
+
+  $("#main").innerHTML=`
+  <div class="prod-hero">
+    <h2>CoreKit <b>Product Lab</b></h2>
+    <div class="ph-sub">Yearly build plan for our own products — SCM, HRMS, POS and friends. Track ${year} targets, watch progress, and act on the suggestions.</div>
+    ${HERO_ILL}
+  </div>
+  <div style="display:flex;justify-content:flex-end;margin-bottom:16px"><button class="primary" data-act="new-project" data-cat="product">+ New product</button></div>
+  <div class="prod-grid">
+  ${products.map((p,i)=>{
+    const ps=stories.filter(s=>s.project?.id===p.id);
+    const yearStories=ps.filter(s=>String(s.createdDate).startsWith(String(year)));
+    const done=yearStories.filter(s=>s.storyStatus==="Done").length;
+    const pct=yearStories.length?Math.round(done/yearStories.length*100):0;
+    const open=ps.filter(s=>s.storyStatus!=="Done");
+    const overdue=open.filter(s=>isPast(s.dueDate)).length;
+    const unassigned=open.filter(s=>!s.assignedTo).length;
+    const critN=critByProject.get(p.id)||0;
+    const sugg=[];
+    if(critN)sugg.push({t:`${critN} critical item${critN>1?"s":""} — churning or badly late`,w:1});
+    if(overdue)sugg.push({t:`${overdue} overdue — reschedule or reassign`,w:1});
+    if(unassigned)sugg.push({t:`${unassigned} unassigned — pick owners`,w:0});
+    if(p.targetDate&&isPast(p.targetDate)&&open.length)sugg.push({t:`target date passed with ${open.length} open — replan the milestone`,w:1});
+    if(!open.length)sugg.push({t:"backlog empty — plan the next milestone",w:0});
+    if(!sugg.length)sugg.push({t:"on track — keep shipping",w:0});
+    const colors=["#EFE9FF","#FFE9E4","#E2F6F0","#FFF6CC"];
+    return `<div class="prodcard" data-act="open-project" data-id="${p.id}">
+      <div class="pc-top"><div class="pc-ill" style="--pcc:${colors[i%4]}">${PROD_ILLS[i%PROD_ILLS.length]}</div>
+        <div><div class="pc-key">${esc(p.key)} · PRODUCT</div><h3>${esc(p.name)}</h3>
+        <div class="pc-desc">${esc(p.description||"")}</div>
+        ${p.targetDate?`<span class="pc-target ${isPast(p.targetDate)?"passed":""}">🎯 target ${fmtD(p.targetDate)}</span>`:""}</div></div>
+      <div class="pc-progress"><div class="lbl"><span>${year} progress</span><span>${done}/${yearStories.length} · ${pct}%</span></div>
+        <div class="pc-bar"><i style="width:${pct}%"></i></div></div>
+      <div class="pc-mini">
+        ${["Backlog","In Progress","In Review","Done"].map(st=>`<span><span class="n">${ps.filter(s=>s.storyStatus===st).length}</span>${st.replace("In ","")}</span>`).join("")}
+      </div>
+      <ul class="pc-sugg">${sugg.slice(0,3).map(s=>`<li class="${s.w?"warn":""}">${esc(s.t)}</li>`).join("")}</ul>
+    </div>`;}).join("")||'<div class="empty" style="grid-column:1/-1">No products yet — create SCM, HRMS, POS… or flip an existing project to Product in its ⚙ Settings.</div>'}
+  </div>`;
+}
+
+// ---------- clients ----------
+function renderProjects(){
+  $("#main").innerHTML=`
+  <div style="display:flex;justify-content:flex-end;margin-bottom:18px"><button class="primary" data-act="new-project" data-cat="client">+ New client project</button></div>
+  <div class="pgrid">${PROJECTS.filter(p=>p.category!=="product").map(p=>`
+    <div class="pcard" data-act="open-project" data-id="${p.id}">
+      <span class="key">${esc(p.key)}</span>
+      ${ME.role==="ADMIN"?`<button class="bare" data-act="del-project" data-id="${p.id}" data-name="${esc(p.name)}" style="float:right;color:var(--red)">✕</button>`:""}
+      <h3>${esc(p.name)}</h3>
+      <div class="desc">${esc(p.description||"")}</div>
+      <div class="foot"><span class="stamp">${esc(p.projectStatus)}</span>
+      <span class="stamp ${esc(p.priority)}">${esc(p.priority)}</span>
+      ${p.dueDate?`<span class="stamp">due ${fmtD(p.dueDate)}</span>`:""}
+      <span style="flex:1"></span>
+      ${String(p.assignees||"").split(",").map(Number).filter(Boolean).slice(0,5).map(id=>{
+        const u=USERS.find(x=>x.id===id);
+        return u?`<span class="who" style="width:22px;height:22px;background:var(--ink);color:var(--yellow);display:inline-flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:8.5px;font-weight:700" title="${esc(u.displayName)}">${initials(u.displayName)}</span>`:"";
+      }).join("")}</div>
+    </div>`).join("")||'<div class="empty">No projects yet</div>'}</div>`;
+}
+function projectModal(cat="client"){
+  const m=$("#modal");
+  m.innerHTML=`<div class="mhead">New ${cat==="product"?"product":"client project"}</div><div class="mbody">
+    <label>Name</label><input id="pn" placeholder="${cat==="product"?"e.g. SCM, HRMS, POS":"e.g. Mission NCC Store"}">
+    <label>Key</label><input id="pk" maxlength="6" placeholder="short prefix, e.g. ${cat==="product"?"SCM":"NCC"}">
+    <label>Description</label><input id="pd">
+    <div class="row2" style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div><label>Type</label><select id="pc"><option value="client" ${cat==="client"?"selected":""}>Client project</option><option value="product" ${cat==="product"?"selected":""}>CoreKit product</option></select></div>
+      <div><label>Priority</label><select id="pp"><option>Medium</option><option>High</option><option>Low</option></select></div>
+      <div><label>Due date</label><input id="pdd" type="date"></div>
+      <div><label>Yearly target date</label><input id="ptd" type="date"></div></div>
+    <div class="formerr" id="perr"></div></div>
+  <div class="mfoot"><button data-act="close">Cancel</button><button class="primary" id="psave">Create</button></div>`;
+  m.classList.add("open");$("#overlay").classList.add("open");
+  $("#psave").onclick=async()=>{try{
+    await api("/api/pm-projects",{method:"POST",body:JSON.stringify({name:$("#pn").value,key:$("#pk").value,description:$("#pd").value,priority:$("#pp").value,dueDate:$("#pdd").value||null,category:$("#pc").value,targetDate:$("#ptd").value||null})});
+    PROJECTS=await api("/api/pm-projects");closePanels();render();
+  }catch(e){$("#perr").textContent=e.message;}};
+}
+
+function projectSettingsModal(p){
+  if(!p)return;
+  const members=new Set(String(p.assignees||"").split(",").map(Number).filter(Boolean));
+  const m=$("#modal");
+  m.innerHTML=`<div class="mhead">${esc(p.key)} — Project settings</div><div class="mbody">
+    <label>Name</label><input id="psn" value="${esc(p.name)}">
+    <label>Description</label><input id="psd" value="${esc(p.description||"")}">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div><label>Type</label><select id="psc"><option value="client" ${p.category!=="product"?"selected":""}>Client project</option><option value="product" ${p.category==="product"?"selected":""}>CoreKit product</option></select></div>
+      <div><label>Priority</label><select id="psp">${["Low","Medium","High"].map(x=>`<option ${p.priority===x?"selected":""}>${x}</option>`).join("")}</select></div>
+      <div><label>Status</label><select id="pss">${["Active","On Hold","Completed"].map(x=>`<option ${p.projectStatus===x?"selected":""}>${x}</option>`).join("")}</select></div>
+      <div><label>Due date</label><input id="psdd" type="date" value="${p.dueDate||""}"></div>
+      <div><label>Yearly target</label><input id="pstd" type="date" value="${p.targetDate||""}"></div>
+      <div><label>Owner</label><select id="pso">${USERS.map(u=>`<option value="${u.id}" ${p.assignedTo?.id===u.id?"selected":""}>${esc(u.displayName)}</option>`).join("")}</select></div>
+    </div>
+    <label>Members — control who can see this project</label>
+    <div style="border:var(--bd);background:var(--white);max-height:220px;overflow-y:auto;padding:8px 12px">
+      ${USERS.map(u=>`<label style="display:flex;gap:10px;align-items:center;margin:0;padding:6px 0;text-transform:none;letter-spacing:0;font-size:13px;font-family:var(--sans);font-weight:500;cursor:pointer">
+        <input type="checkbox" data-member="${u.id}" ${members.has(u.id)?"checked":""} style="width:auto">
+        ${esc(u.displayName)} <span class="mono" style="font-size:10px;color:var(--dim)">${esc(u.role)}</span></label>`).join("")}
+    </div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:6px">Admins and dev leads always see every project.</div>
+    <div class="formerr" id="pserr"></div></div>
+  <div class="mfoot"><button data-act="close">Cancel</button><button class="primary" id="pssave">Save</button></div>`;
+  m.classList.add("open");$("#overlay").classList.add("open");
+  $("#pssave").onclick=async()=>{try{
+    const assignees=$$("[data-member]",m).filter(c=>c.checked).map(c=>c.dataset.member).join(",");
+    await api("/api/pm-projects/"+p.id,{method:"PUT",body:JSON.stringify({
+      name:$("#psn").value,description:$("#psd").value,priority:$("#psp").value,
+      projectStatus:$("#pss").value,dueDate:$("#psdd").value||null,
+      category:$("#psc").value,targetDate:$("#pstd").value||null,
+      assignedTo:{id:Number($("#pso").value)},assignees})});
+    PROJECTS=await api("/api/pm-projects");closePanels();render();
+  }catch(e){$("#pserr").textContent=e.message;}};
+}
+
+// ---------- board ----------
+async function renderBoard(projectId){
+  const p=PROJECTS.find(x=>x.id===projectId);
+  if(!p){location.hash="#/projects";return;}
+  let boardAnalytics;
+  [BOARD_STORIES,boardAnalytics]=await Promise.all([
+    api("/api/pm-stories?projectId="+projectId),
+    api("/api/analytics?projectId="+projectId).catch(()=>null)]);
+  BOARD_CRIT=new Map((boardAnalytics?.stories||[]).map(a=>[a.id,a]));
+  $("#main").innerHTML=`
+  <div class="board-head">
+    ${["all","Story","Issue","Bug"].map(t=>`<button class="fchip ${FILTER.type===t?"on":""}" data-f="${t}">${t}</button>`).join("")}
+    <select id="fAssignee" style="width:auto"><option value="">everyone</option>
+      ${USERS.map(u=>`<option value="${u.id}" ${String(FILTER.assignee)===String(u.id)?"selected":""}>${esc(u.displayName)}</option>`).join("")}</select>
+    <input type="search" id="fq" placeholder="SEARCH…" value="${esc(FILTER.q)}">
+    <span style="flex:1"></span>
+    ${(isLead()||p.assignedTo?.id===ME.id)?`<button data-act="project-settings" data-id="${projectId}">⚙ Settings</button>`:""}
+    <button class="primary" data-act="new-story" data-project="${projectId}">+ New item</button>
+  </div>
+  <div class="ktabs">${STATUSES.map(st=>`
+    <button class="fchip ${(FILTER.mcol||"Backlog")===st?"on":""}" data-mcol="${st}">${st}<span class="kn" id="kn-${stampCls(st)}">0</span></button>`).join("")}</div>
+  <div class="kanban">${STATUSES.map(st=>`
+    <div class="kcol ${(FILTER.mcol||"Backlog")===st?"active":""}" data-status="${st}">
+      <div class="khead"><h4>${st}</h4><span class="cnt" style="--kc:${KC[st]};background:${KC[st]}" id="cnt-${stampCls(st)}"></span></div>
+      <div class="klist" data-status="${st}"></div>
+    </div>`).join("")}</div>`;
+  $$("[data-mcol]").forEach(b=>b.onclick=()=>{
+    FILTER.mcol=b.dataset.mcol;
+    $$("[data-mcol]").forEach(x=>x.classList.toggle("on",x===b));
+    $$(".kcol").forEach(c=>c.classList.toggle("active",c.dataset.status===FILTER.mcol));
+  });
+  $$(".board-head .fchip").forEach(b=>b.onclick=()=>{FILTER.type=b.dataset.f;renderBoard(projectId);});
+  $("#fAssignee").onchange=(e)=>{FILTER.assignee=e.target.value;paintCards();};
+  $("#fq").oninput=(e)=>{FILTER.q=e.target.value;paintCards();};
+  paintCards();
+  $$(".kcol").forEach(col=>{
+    col.ondragover=(e)=>{e.preventDefault();col.classList.add("dragover");};
+    col.ondragleave=()=>col.classList.remove("dragover");
+    col.ondrop=async(e)=>{e.preventDefault();col.classList.remove("dragover");
+      const id=Number(e.dataTransfer.getData("text/plain")), st=col.dataset.status;
+      const s=BOARD_STORIES.find(x=>x.id===id);
+      if(!s||s.storyStatus===st) return;
+      s.storyStatus=st;paintCards();
+      try{await api("/api/pm-stories/"+id,{method:"PUT",body:JSON.stringify({storyStatus:st})});}
+      catch(err){alert("Move failed: "+err.message);renderBoard(projectId);}};
+  });
+}
+function paintCards(){
+  const vis=BOARD_STORIES.filter(s=>
+    (FILTER.type==="all"||s.type===FILTER.type)&&
+    (!FILTER.assignee||String(s.assignedTo?.id)===String(FILTER.assignee))&&
+    (!FILTER.q||(s.name+" "+s.number+" "+(s.module||"")).toLowerCase().includes(FILTER.q.toLowerCase())));
+  for(const st of STATUSES){
+    const items=vis.filter(s=>s.storyStatus===st);
+    const cnt=$("#cnt-"+stampCls(st)); if(cnt)cnt.textContent=items.length;
+    const kn=$("#kn-"+stampCls(st)); if(kn)kn.textContent=items.length;
+    const list=$(`.klist[data-status="${st}"]`); if(!list)continue;
+    list.innerHTML=items.map(s=>{const od=isPast(s.dueDate)&&st!=="Done";
+      const a=BOARD_CRIT.get(s.id);
+      return `<div class="card" draggable="true" data-act="open-story" data-id="${s.id}" ${a?.critical?`style="border-color:var(--red);box-shadow:4px 4px 0 var(--red)"`:""}>
+      <div class="top"><span class="num">${esc(s.number)}</span>
+        ${a?.critical?`<span class="stamp High" style="border-width:2px" title="${esc(a.criticalReasons.join(" · "))}">⚠ CRITICAL</span>`:""}
+        <span class="stamp ${stampCls(s.type)}" style="border-width:2px">${esc(s.type)}</span></div>
+      <div class="nm">${esc(s.name)}</div>
+      <div class="bot"><div class="meta">
+        ${s.priority==="High"?'<span style="color:var(--red);font-weight:700">HIGH</span>':""}
+        ${s.storyPoints!=null?`<span>${s.storyPoints}pt</span>`:""}
+        ${s.dueDate?`<span class="${od?"late":""}">${od?"⚑ ":""}${fmtD(s.dueDate)}</span>`:""}
+        ${s.module?`<span>${esc(s.module)}</span>`:""}</div>
+      <div class="who" title="${esc(s.assignedTo?.displayName||"unassigned")}">${initials(s.assignedTo?.displayName)}</div></div></div>`;}).join("");
+  }
+  $$(".card").forEach(c=>{
+    c.ondragstart=(e)=>{e.dataTransfer.setData("text/plain",c.dataset.id);c.classList.add("dragging");};
+    c.ondragend=()=>c.classList.remove("dragging");
+  });
+}
+
+// ---------- story drawer ----------
+function storyDrawer(s,projectId){
+  const d=$("#drawer");
+  const isNew=!s;
+  d.innerHTML=`
+  <div class="dhead"><span class="num">${isNew?"NEW ITEM":esc(s.number)}</span>
+    <button class="bare" data-act="close" style="background:var(--paper);box-shadow:none">✕</button></div>
+  <div class="dbody">
+    <label>Title</label><input id="sn" value="${esc(s?.name||"")}">
+    <label>Description</label><textarea id="sd">${esc(s?.description||"")}</textarea>
+    <div class="row2">
+      <div><label>Type</label><select id="sty">${["Story","Issue","Bug"].map(t=>`<option ${s?.type===t?"selected":""}>${t}</option>`).join("")}</select></div>
+      <div><label>Status</label><select id="sst">${STATUSES.map(t=>`<option ${(s?.storyStatus||"Backlog")===t?"selected":""}>${t}</option>`).join("")}</select></div>
+      <div><label>Priority</label><select id="spr">${["Low","Medium","High"].map(t=>`<option ${(s?.priority||"Medium")===t?"selected":""}>${t}</option>`).join("")}</select></div>
+      <div><label>Points</label><input id="spt" type="number" min="0" value="${s?.storyPoints??""}"></div>
+      <div><label>Due date</label><input id="sdd" type="date" value="${s?.dueDate||""}"></div>
+      <div><label>Module</label><input id="sm" value="${esc(s?.module||"")}"></div>
+      <div><label>Assignee</label><select id="sa">${USERS.map(u=>`<option value="${u.id}" ${(s?.assignedTo?.id??ME.id)===u.id?"selected":""}>${esc(u.displayName)}</option>`).join("")}</select></div>
+      <div><label>Reporter</label><select id="sr" ${isNew?"":"disabled"}>${USERS.map(u=>`<option value="${u.id}" ${(s?.reporter?.id??ME.id)===u.id?"selected":""}>${esc(u.displayName)}</option>`).join("")}</select></div>
+    </div>
+    ${isNew?"":`
+    <div class="subsec"><label>Attachments</label><div id="flist"><div class="empty">loading…</div></div>
+      <div style="display:flex;gap:10px;margin-top:10px;align-items:center">
+        <input type="file" id="fpick" style="border:none;padding:0;background:none">
+        <button class="bare" id="fup">Upload</button></div></div>
+    <div class="subsec"><label>Comments</label><div id="clist"><div class="empty">loading…</div></div>
+      <div style="display:flex;gap:8px;margin-top:10px"><input id="cnew" placeholder="write a comment… (paste a screenshot here)">
+        <button class="bare" id="cimg" title="attach image">🖼</button><button class="bare" id="cadd">Post</button></div>
+      <input type="file" id="cimgpick" accept="image/*" style="display:none">
+      <div id="cpending"></div></div>
+    <div class="subsec"><label>History</label><div id="hlist"><div class="empty">loading…</div></div></div>`}
+  </div>
+  <div class="dfoot">
+    ${isNew||!isLead()?"<span></span>":`<button class="danger" id="sdel">Delete</button>`}
+    <button class="primary" id="ssave">${isNew?"Create":"Save"}</button>
+  </div>`;
+  d.classList.add("open");$("#overlay").classList.add("open");
+
+  if(!isNew){
+    let pendingImg=null; // {base64, mime, label}
+    const showPending=()=>{$("#cpending").innerHTML=pendingImg?`<div class="pending-img">🖼 ${esc(pendingImg.label)} ready to post <button class="bare" id="cimgx" style="padding:1px 6px">✕</button></div>`:"";
+      const x=$("#cimgx"); if(x)x.onclick=()=>{pendingImg=null;showPending();};};
+    const fileToPending=(f)=>new Promise((ok)=>{const r=new FileReader();
+      r.onload=()=>{pendingImg={base64:r.result.split(",")[1],mime:f.type||"image/png",label:f.name||"screenshot"};showPending();ok();};
+      r.readAsDataURL(f);});
+    const loadComments=()=>api("/api/pm-comments?storyId="+s.id).then(cs=>{
+      $("#clist").innerHTML=cs.length?cs.map(c=>`<div class="comment">
+        <div class="ch"><b>${esc(c.user?.displayName)}</b> · ${fmtD(c.createdDate)}</div>
+        ${c.text?`<p>${esc(c.text)}</p>`:""}
+        ${c.imageUrl?`<a href="${c.imageUrl}" target="_blank" rel="noopener"><img src="${c.imageUrl}" alt="comment image" loading="lazy"></a>`:""}</div>`).join("")
+        :'<div class="empty">No comments</div>';});
+    const loadHistory=()=>api("/api/pm-history?storyId="+s.id).then(hs=>{
+      const label={created:"created",storyStatus:"status",assignedTo:"assignee",reporter:"reporter",dueDate:"due date",storyPoints:"points",name:"title",module:"module",type:"type",priority:"priority",description:"description"};
+      $("#hlist").innerHTML=hs.length?hs.map(h=>`<div class="hist-row"><span class="ht">${new Date(h.createdDate).toLocaleString("en-GB",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</span>
+        <span><b>${esc(h.user?.displayName||"—")}</b> ${h.field==="created"?`created <b>${esc(h.newValue)}</b>`
+          :h.field==="description"?"updated the description"
+          :`changed ${label[h.field]||esc(h.field)}: ${esc(h.oldValue??"—")} <span class="arrow">→</span> <b>${esc(h.newValue??"—")}</b>`}</span></div>`).join("")
+        :'<div class="empty">No changes yet</div>';});
+    const loadFiles=()=>api("/api/files?storyId="+s.id).then(fs=>{
+      $("#flist").innerHTML=fs.length?fs.map(f=>`<div class="file-row">
+        <a href="${f.url}" download>${esc(f.filename)}</a><span class="fs">${fmtSize(f.size)} · ${esc(f.uploadedBy?.displayName||"")}</span>
+        <span class="sp"></span><button class="bare" data-fdel="${f.id}">✕</button></div>`).join("")
+        :'<div class="empty">No files</div>';
+      $$("[data-fdel]").forEach(b=>b.onclick=async()=>{await api("/api/files/"+b.dataset.fdel,{method:"DELETE"});loadFiles();});});
+    loadComments();loadFiles();loadHistory();
+    const postComment=async()=>{
+      const t=$("#cnew").value.trim();
+      if(!t&&!pendingImg)return;
+      await api("/api/pm-comments",{method:"POST",body:JSON.stringify({storyId:s.id,text:t,
+        ...(pendingImg?{imageBase64:pendingImg.base64,imageMime:pendingImg.mime}:{})})});
+      $("#cnew").value="";pendingImg=null;showPending();loadComments();};
+    $("#cadd").onclick=postComment;
+    $("#cnew").onkeydown=(e)=>{if(e.key==="Enter")postComment();};
+    $("#cnew").onpaste=async(e)=>{
+      const item=[...(e.clipboardData?.items||[])].find(i=>i.type.startsWith("image/"));
+      if(item){e.preventDefault();await fileToPending(item.getAsFile());}};
+    $("#cimg").onclick=()=>$("#cimgpick").click();
+    $("#cimgpick").onchange=async()=>{const f=$("#cimgpick").files[0];if(f)await fileToPending(f);$("#cimgpick").value="";};
+    $("#fup").onclick=async()=>{
+      const f=$("#fpick").files[0]; if(!f){alert("Choose a file first");return;}
+      if(f.size>25*1024*1024){alert("Max 25 MB");return;}
+      const b64=await new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result.split(",")[1]);r.onerror=no;r.readAsDataURL(f);});
+      $("#fup").textContent="…";
+      try{await api("/api/files",{method:"POST",body:JSON.stringify({storyId:s.id,filename:f.name,mime:f.type,dataBase64:b64})});
+        $("#fpick").value="";loadFiles();}catch(e){alert(e.message);}
+      $("#fup").textContent="Upload";};
+    const sdel=$("#sdel");
+    if(sdel)sdel.onclick=async()=>{if(!confirm(`Delete ${s.number}?`))return;
+      try{await api("/api/pm-stories/"+s.id,{method:"DELETE"});closePanels();render();}catch(e){alert(e.message);}};
+  }
+  $("#ssave").onclick=async()=>{
+    const body={name:$("#sn").value,description:$("#sd").value,module:$("#sm").value,type:$("#sty").value,
+      priority:$("#spr").value,storyStatus:$("#sst").value,dueDate:$("#sdd").value||null,
+      storyPoints:$("#spt").value===""?null:Number($("#spt").value),
+      assignedTo:{id:Number($("#sa").value)},...(isNew?{reporter:{id:Number($("#sr").value)},project:{id:projectId}}:{})};
+    try{
+      if(isNew) await api("/api/pm-stories",{method:"POST",body:JSON.stringify(body)});
+      else await api("/api/pm-stories/"+s.id,{method:"PUT",body:JSON.stringify(body)});
+      closePanels();render();
+    }catch(e){alert(e.message);}
+  };
+}
+
+// ---------- team ----------
+async function renderTeam(){
+  const all=await api("/api/users"); // includes disabled accounts
+  $("#main").innerHTML=`
+  <div style="display:flex;justify-content:flex-end;margin-bottom:18px"><button class="primary" data-act="new-user">+ Add user</button></div>
+  <div class="block"><div class="bhead"><h2>Team</h2><div class="note">${all.filter(u=>u.enabled).length} active · ${all.filter(u=>!u.enabled).length} disabled</div></div>
+  <table class="cardify"><thead><tr><th>Name</th><th>Username</th><th>Email</th><th>Role</th><th>Last login</th><th>Actions</th></tr></thead><tbody>
+  ${all.map(u=>`<tr style="${u.enabled?"":"opacity:.45"}"><td><b>${esc(u.displayName)}</b>${u.enabled?"":" <span class='stamp'>disabled</span>"}</td>
+    <td class="mono" data-l="Username">${esc(u.username)}</td>
+    <td class="mono" data-l="Email">${esc(u.email||"—")}</td>
+    <td data-l="Role"><span class="stamp">${esc(u.role)}</span></td>
+    <td class="mono" data-l="Last login">${u.lastLoginAt?fmtD(u.lastLoginAt):"never"}</td>
+    <td data-l="" style="white-space:nowrap">
+      <button class="bare" data-uedit="${u.id}">edit</button>
+      <button class="bare" data-ureset="${u.id}">reset pw</button>
+      ${u.id!==ME.id?`<button class="bare" data-utoggle="${u.id}" data-en="${u.enabled?0:1}">${u.enabled?"disable":"enable"}</button>
+      <button class="bare" style="color:var(--red)" data-udel="${u.id}" data-name="${esc(u.displayName)}">delete</button>`:""}
+    </td></tr>`).join("")}</tbody></table></div>`;
+  $$("[data-uedit]").forEach(b=>b.onclick=()=>editUserModal(all.find(u=>u.id===Number(b.dataset.uedit))));
+  $$("[data-ureset]").forEach(b=>b.onclick=async()=>{
+    const u=all.find(x=>x.id===Number(b.dataset.ureset));
+    b.textContent="…";
+    try{const r=await api(`/api/users/${u.id}/reset-link`,{method:"POST"});resetLinkModal(u,r);}
+    catch(e){alert(e.message);}
+    b.textContent="reset pw";});
+  $$("[data-utoggle]").forEach(b=>b.onclick=async()=>{
+    await api("/api/users/"+b.dataset.utoggle,{method:"PUT",body:JSON.stringify({enabled:b.dataset.en==="1"})});
+    USERS=(await api("/api/users")).filter(u=>u.enabled);renderTeam();});
+  $$("[data-udel]").forEach(b=>b.onclick=async()=>{
+    if(!confirm(`Permanently delete user "${b.dataset.name}"?`))return;
+    try{await api("/api/users/"+b.dataset.udel,{method:"DELETE"});
+      USERS=(await api("/api/users")).filter(u=>u.enabled);renderTeam();}
+    catch(e){alert(e.message);}});
+}
+function editUserModal(u){
+  const m=$("#modal");
+  m.innerHTML=`<div class="mhead">Edit ${esc(u.displayName)}</div><div class="mbody">
+    <label>Display name</label><input id="eun" value="${esc(u.displayName)}">
+    <label>Email</label><input id="eue" type="email" value="${esc(u.email||"")}" placeholder="for invites & resets">
+    <label>Role</label><select id="eur">${["USER","DEV","DEVLEAD","ADMIN"].map(r=>`<option ${u.role===r?"selected":""}>${r}</option>`).join("")}</select>
+    <label>New password (leave blank to keep)</label><input id="eup" type="text" placeholder="unchanged">
+    <div class="formerr" id="eerr"></div></div>
+  <div class="mfoot"><button data-act="close">Cancel</button><button class="primary" id="esave">Save</button></div>`;
+  m.classList.add("open");$("#overlay").classList.add("open");
+  $("#esave").onclick=async()=>{try{
+    const body={displayName:$("#eun").value,role:$("#eur").value,email:$("#eue").value||null};
+    if($("#eup").value)body.password=$("#eup").value;
+    await api("/api/users/"+u.id,{method:"PUT",body:JSON.stringify(body)});
+    USERS=(await api("/api/users")).filter(x=>x.enabled);closePanels();renderTeam();
+  }catch(e){$("#eerr").textContent=e.message;}};
+}
+function resetLinkModal(u,r){
+  const m=$("#modal");
+  m.innerHTML=`<div class="mhead">Password reset — ${esc(u.displayName)}</div><div class="mbody">
+    <p style="font-size:13px;margin-top:12px">${r.mailed
+      ?`A reset link was <b>emailed to ${esc(u.email)}</b>. It expires in ${r.expiresInMinutes} minutes.`
+      :`Share this one-time link with ${esc(u.displayName)} (WhatsApp, mail, anything). Valid ${r.expiresInMinutes} minutes:`}</p>
+    <label>Reset link</label><input id="rlink" readonly value="${esc(r.link)}">
+    <div style="margin-top:10px"><button class="bare" id="rcopy">Copy link</button></div></div>
+  <div class="mfoot"><button class="primary" data-act="close">Done</button></div>`;
+  m.classList.add("open");$("#overlay").classList.add("open");
+  $("#rcopy").onclick=()=>{$("#rlink").select();navigator.clipboard?.writeText($("#rlink").value);$("#rcopy").textContent="Copied ✓";};
+}
+function userModal(){
+  const m=$("#modal");
+  m.innerHTML=`<div class="mhead">Add user</div><div class="mbody">
+    <label>Display name</label><input id="un">
+    <label>Username (login handle)</label><input id="uu" placeholder="e.g. viral">
+    <label>Email (invites &amp; password resets go here)</label><input id="ue" type="email" placeholder="name@company.com">
+    <label>Role</label><select id="ur"><option>USER</option><option>DEV</option><option>DEVLEAD</option><option>ADMIN</option></select>
+    <label>Password (optional — leave blank to send a set-password invite)</label><input id="up" type="text" placeholder="blank = invite link">
+    <div class="formerr" id="uerr"></div></div>
+  <div class="mfoot"><button data-act="close">Cancel</button><button class="primary" id="usave">Create</button></div>`;
+  m.classList.add("open");$("#overlay").classList.add("open");
+  $("#usave").onclick=async()=>{try{
+    const body={displayName:$("#un").value,username:$("#uu").value,role:$("#ur").value,email:$("#ue").value||null};
+    if($("#up").value)body.password=$("#up").value;
+    const created=await api("/api/users",{method:"POST",body:JSON.stringify(body)});
+    USERS=(await api("/api/users")).filter(u=>u.enabled);
+    if(created.inviteLink){
+      inviteModal(created);
+    }else{closePanels();renderTeam();}
+  }catch(e){$("#uerr").textContent=e.message;}};
+}
+function inviteModal(u){
+  const m=$("#modal");
+  m.innerHTML=`<div class="mhead">Invite — ${esc(u.displayName)}</div><div class="mbody">
+    <p style="font-size:13px;margin-top:12px">${u.mailed
+      ?`An invite was <b>emailed to ${esc(u.email)}</b> with a set-password link (valid 72 hours).`
+      :`Share this set-password link with ${esc(u.displayName)} (valid 72 hours):`}</p>
+    <label>Invite link</label><input id="rlink" readonly value="${esc(u.inviteLink)}">
+    <div style="margin-top:10px"><button class="bare" id="rcopy">Copy link</button></div></div>
+  <div class="mfoot"><button class="primary" id="idone">Done</button></div>`;
+  $("#rcopy").onclick=()=>{$("#rlink").select();navigator.clipboard?.writeText($("#rlink").value);$("#rcopy").textContent="Copied ✓";};
+  $("#idone").onclick=()=>{closePanels();renderTeam();};
+}
+
+boot();
+if("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(()=>{});
+</script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+# Caddy reverse proxy for CoreKit Tracker — automatic HTTPS via Let's Encrypt.
+# Requires DNS A records for corekit.me (and www) pointing at this server.
+
+corekit.me {
+	encode gzip
+	reverse_proxy 127.0.0.1:4580
+}
+
+www.corekit.me {
+	redir https://corekit.me{uri} permanent
+}

@@ -1,0 +1,14 @@
+# runtime data — never commit (contains DB, uploads, admin password)
+data/
+*.db
+*.db-wal
+*.db-shm
+
+# secrets
+sprint0.credentials.json
+*.env
+*.pem
+
+node_modules/
+*.log
+.DS_Store

@@ -165,10 +165,20 @@ td.mono{font-size:11.5px}
 .drawer.open{transform:none}
 .drawer .dhead{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:var(--ink);color:var(--paper)}
 .drawer .dhead .num{font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.12em;color:var(--yellow)}
-.drawer .dbody{padding:4px 18px 18px;overflow-y:auto;flex:1}
+.drawer .dbody{padding:2px 18px 18px;overflow-y:auto;flex:1;
+  background:repeating-linear-gradient(-45deg,var(--paper) 0 26px,var(--paper2) 26px 30px)}
 .drawer .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .drawer .dfoot{padding:12px 18px;border-top:var(--bd);display:flex;gap:10px;justify-content:space-between;background:var(--paper2)}
-.subsec{margin-top:20px;border-top:var(--bd);padding-top:6px}
+.drawer .dhead .stamp{border-color:var(--paper);color:var(--ink)}
+.drawer .dhead .stamp.Done,.drawer .dhead .stamp.InReview,.drawer .dhead .stamp.Bug,.drawer .dhead .stamp.Issue{color:#fff}
+/* drawer section plates — each part of the ticket is its own nailed-down block */
+.dsec{background:var(--white);border:var(--bd);box-shadow:var(--shadow-sm);margin:16px 0}
+.dsec-h{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 12px;
+  background:var(--ink);color:var(--paper);font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.22em;text-transform:uppercase}
+.dsec-h .sq{display:inline-block;width:9px;height:9px;border:2px solid var(--paper);margin-right:9px;vertical-align:-1px;background:var(--sc,var(--yellow))}
+.dsec-h .n{color:var(--yellow);letter-spacing:.08em}
+.dsec-b{padding:0 14px 14px}
+.dsec-b>label:first-child,.dsec-b .row2>div>label{margin-top:12px}
 .comment{padding:9px 0;border-bottom:2px solid var(--paper2)}
 .comment .ch{font-family:var(--mono);font-size:10px;color:var(--dim)}
 .comment .ch b{color:var(--ink)}
@@ -702,7 +712,7 @@ function projectSettingsModal(p){
         <input type="checkbox" data-member="${u.id}" ${members.has(u.id)?"checked":""} style="width:auto">
         ${esc(u.displayName)} <span class="mono" style="font-size:10px;color:var(--dim)">${esc(u.role)}</span></label>`).join("")}
     </div>
-    <div style="font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:6px">Admins and dev leads always see every project.</div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:6px">Only admins see every project — everyone else (including dev leads) only sees projects they're on.</div>
     <div class="formerr" id="pserr"></div></div>
   <div class="mfoot"><button data-act="close">Cancel</button><button class="primary" id="pssave">Save</button></div>`;
   m.classList.add("open");$("#overlay").classList.add("open");
@@ -733,8 +743,8 @@ async function renderBoard(projectId){
       ${USERS.map(u=>`<option value="${u.id}" ${String(FILTER.assignee)===String(u.id)?"selected":""}>${esc(u.displayName)}</option>`).join("")}</select>
     <input type="search" id="fq" placeholder="SEARCH…" value="${esc(FILTER.q)}">
     <span style="flex:1"></span>
-    ${(isLead()||p.assignedTo?.id===ME.id)?`<button data-act="project-settings" data-id="${projectId}">⚙ Settings</button>`:""}
-    <button class="primary" data-act="new-story" data-project="${projectId}">+ New item</button>
+    ${(ME.role==="ADMIN"||p.assignedTo?.id===ME.id||(ME.role==="DEVLEAD"&&String(p.assignees||"").split(",").map(Number).includes(ME.id)))?`<button data-act="project-settings" data-id="${projectId}">⚙ Settings</button>`:""}
+    ${ME.role!=="DEV"?`<button class="primary" data-act="new-story" data-project="${projectId}">+ New item</button>`:""}
   </div>
   <div class="ktabs">${STATUSES.map(st=>`
     <button class="fchip ${(FILTER.mcol||"Backlog")===st?"on":""}" data-mcol="${st}">${st}<span class="kn" id="kn-${stampCls(st)}">0</span></button>`).join("")}</div>
@@ -798,36 +808,61 @@ function paintCards(){
 function storyDrawer(s,projectId){
   const d=$("#drawer");
   const isNew=!s;
+  const proj=PROJECTS.find(p=>p.id===projectId);
+  const canDelete=!isNew&&(ME.role==="ADMIN"||(ME.role==="DEVLEAD"&&(s?.reporter?.id===ME.id||proj?.assignedTo?.id===ME.id)));
   d.innerHTML=`
-  <div class="dhead"><span class="num">${isNew?"NEW ITEM":esc(s.number)}</span>
+  <div class="dhead"><span style="display:flex;gap:12px;align-items:center"><span class="num">${isNew?"NEW ITEM":esc(s.number)}</span>
+    ${isNew?"":`<span class="stamp ${stampCls(s.type)}">${esc(s.type)}</span><span class="stamp ${stampCls(s.storyStatus)}">${esc(s.storyStatus)}</span>`}</span>
     <button class="bare" data-act="close" style="background:var(--paper);box-shadow:none">✕</button></div>
   <div class="dbody">
-    <label>Title</label><input id="sn" value="${esc(s?.name||"")}">
-    <label>Description</label><textarea id="sd">${esc(s?.description||"")}</textarea>
-    <div class="row2">
-      <div><label>Type</label><select id="sty">${["Story","Issue","Bug"].map(t=>`<option ${s?.type===t?"selected":""}>${t}</option>`).join("")}</select></div>
-      <div><label>Status</label><select id="sst">${STATUSES.map(t=>`<option ${(s?.storyStatus||"Backlog")===t?"selected":""}>${t}</option>`).join("")}</select></div>
-      <div><label>Priority</label><select id="spr">${["Low","Medium","High"].map(t=>`<option ${(s?.priority||"Medium")===t?"selected":""}>${t}</option>`).join("")}</select></div>
-      <div><label>Points</label><input id="spt" type="number" min="0" value="${s?.storyPoints??""}"></div>
-      <div><label>Due date</label><input id="sdd" type="date" value="${s?.dueDate||""}"></div>
-      <div><label>Module</label><input id="sm" value="${esc(s?.module||"")}"></div>
-      <div><label>Assignee</label><select id="sa">${USERS.map(u=>`<option value="${u.id}" ${(s?.assignedTo?.id??ME.id)===u.id?"selected":""}>${esc(u.displayName)}</option>`).join("")}</select></div>
-      <div><label>Reporter</label><select id="sr" ${isNew?"":"disabled"}>${USERS.map(u=>`<option value="${u.id}" ${(s?.reporter?.id??ME.id)===u.id?"selected":""}>${esc(u.displayName)}</option>`).join("")}</select></div>
+    <div class="dsec">
+      <div class="dsec-h"><span><i class="sq"></i>Details</span></div>
+      <div class="dsec-b">
+        <label>Title</label><input id="sn" value="${esc(s?.name||"")}">
+        <label>Description</label><textarea id="sd">${esc(s?.description||"")}</textarea>
+      </div>
+    </div>
+    <div class="dsec">
+      <div class="dsec-h"><span><i class="sq" style="--sc:var(--blue)"></i>Triage</span></div>
+      <div class="dsec-b"><div class="row2">
+        <div><label>Type</label><select id="sty">${["Story","Issue","Bug"].map(t=>`<option ${s?.type===t?"selected":""}>${t}</option>`).join("")}</select></div>
+        <div><label>Status</label><select id="sst">${STATUSES.map(t=>`<option ${(s?.storyStatus||"Backlog")===t?"selected":""}>${t}</option>`).join("")}</select></div>
+        <div><label>Priority</label><select id="spr">${["Low","Medium","High"].map(t=>`<option ${(s?.priority||"Medium")===t?"selected":""}>${t}</option>`).join("")}</select></div>
+        <div><label>Points</label><input id="spt" type="number" min="0" value="${s?.storyPoints??""}"></div>
+        <div><label>Due date</label><input id="sdd" type="date" value="${s?.dueDate||""}"></div>
+        <div><label>Module</label><input id="sm" value="${esc(s?.module||"")}"></div>
+      </div></div>
+    </div>
+    <div class="dsec">
+      <div class="dsec-h"><span><i class="sq" style="--sc:var(--green)"></i>People</span></div>
+      <div class="dsec-b"><div class="row2">
+        <div><label>Assignee</label><select id="sa">${USERS.map(u=>`<option value="${u.id}" ${(s?.assignedTo?.id??ME.id)===u.id?"selected":""}>${esc(u.displayName)}</option>`).join("")}</select></div>
+        <div><label>Reporter</label><input value="${esc(s?.reporter?.displayName??ME.displayName)}" disabled title="Reporter is always whoever created the item"></div>
+      </div></div>
     </div>
     ${isNew?"":`
-    <div class="subsec"><label>Attachments</label><div id="flist"><div class="empty">loading…</div></div>
-      <div style="display:flex;gap:10px;margin-top:10px;align-items:center">
-        <input type="file" id="fpick" style="border:none;padding:0;background:none">
-        <button class="bare" id="fup">Upload</button></div></div>
-    <div class="subsec"><label>Comments</label><div id="clist"><div class="empty">loading…</div></div>
-      <div style="display:flex;gap:8px;margin-top:10px"><input id="cnew" placeholder="write a comment… (paste a screenshot here)">
-        <button class="bare" id="cimg" title="attach image">🖼</button><button class="bare" id="cadd">Post</button></div>
-      <input type="file" id="cimgpick" accept="image/*" style="display:none">
-      <div id="cpending"></div></div>
-    <div class="subsec"><label>History</label><div id="hlist"><div class="empty">loading…</div></div></div>`}
+    <div class="dsec">
+      <div class="dsec-h"><span><i class="sq" style="--sc:var(--red)"></i>Attachments</span><span class="n" id="fcount"></span></div>
+      <div class="dsec-b"><div id="flist" style="margin-top:10px"><div class="empty">loading…</div></div>
+        <div style="display:flex;gap:10px;margin-top:10px;align-items:center">
+          <input type="file" id="fpick" style="border:none;padding:0;background:none">
+          <button class="bare" id="fup">Upload</button></div></div>
+    </div>
+    <div class="dsec">
+      <div class="dsec-h"><span><i class="sq"></i>Comments</span><span class="n" id="ccount"></span></div>
+      <div class="dsec-b"><div id="clist" style="margin-top:6px"><div class="empty">loading…</div></div>
+        <div style="display:flex;gap:8px;margin-top:10px"><input id="cnew" placeholder="write a comment… (paste a screenshot here)">
+          <button class="bare" id="cimg" title="attach image">🖼</button><button class="bare" id="cadd">Post</button></div>
+        <input type="file" id="cimgpick" accept="image/*" style="display:none">
+        <div id="cpending"></div></div>
+    </div>
+    <div class="dsec">
+      <div class="dsec-h"><span><i class="sq" style="--sc:var(--paper)"></i>History</span><span class="n" id="hcount"></span></div>
+      <div class="dsec-b"><div id="hlist" style="margin-top:6px"><div class="empty">loading…</div></div></div>
+    </div>`}
   </div>
   <div class="dfoot">
-    ${isNew||!isLead()?"<span></span>":`<button class="danger" id="sdel">Delete</button>`}
+    ${canDelete?`<button class="danger" id="sdel">Delete</button>`:"<span></span>"}
     <button class="primary" id="ssave">${isNew?"Create":"Save"}</button>
   </div>`;
   d.classList.add("open");$("#overlay").classList.add("open");
@@ -840,12 +875,14 @@ function storyDrawer(s,projectId){
       r.onload=()=>{pendingImg={base64:r.result.split(",")[1],mime:f.type||"image/png",label:f.name||"screenshot"};showPending();ok();};
       r.readAsDataURL(f);});
     const loadComments=()=>api("/api/pm-comments?storyId="+s.id).then(cs=>{
+      $("#ccount").textContent=cs.length?`× ${cs.length}`:"";
       $("#clist").innerHTML=cs.length?cs.map(c=>`<div class="comment">
         <div class="ch"><b>${esc(c.user?.displayName)}</b> · ${fmtD(c.createdDate)}</div>
         ${c.text?`<p>${esc(c.text)}</p>`:""}
         ${c.imageUrl?`<a href="${c.imageUrl}" target="_blank" rel="noopener"><img src="${c.imageUrl}" alt="comment image" loading="lazy"></a>`:""}</div>`).join("")
         :'<div class="empty">No comments</div>';});
     const loadHistory=()=>api("/api/pm-history?storyId="+s.id).then(hs=>{
+      $("#hcount").textContent=hs.length?`× ${hs.length}`:"";
       const label={created:"created",storyStatus:"status",assignedTo:"assignee",reporter:"reporter",dueDate:"due date",storyPoints:"points",name:"title",module:"module",type:"type",priority:"priority",description:"description"};
       $("#hlist").innerHTML=hs.length?hs.map(h=>`<div class="hist-row"><span class="ht">${new Date(h.createdDate).toLocaleString("en-GB",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</span>
         <span><b>${esc(h.user?.displayName||"—")}</b> ${h.field==="created"?`created <b>${esc(h.newValue)}</b>`
@@ -853,11 +890,12 @@ function storyDrawer(s,projectId){
           :`changed ${label[h.field]||esc(h.field)}: ${esc(h.oldValue??"—")} <span class="arrow">→</span> <b>${esc(h.newValue??"—")}</b>`}</span></div>`).join("")
         :'<div class="empty">No changes yet</div>';});
     const loadFiles=()=>api("/api/files?storyId="+s.id).then(fs=>{
+      $("#fcount").textContent=fs.length?`× ${fs.length}`:"";
       $("#flist").innerHTML=fs.length?fs.map(f=>`<div class="file-row">
         <a href="${f.url}" download>${esc(f.filename)}</a><span class="fs">${fmtSize(f.size)} · ${esc(f.uploadedBy?.displayName||"")}</span>
-        <span class="sp"></span><button class="bare" data-fdel="${f.id}">✕</button></div>`).join("")
+        <span class="sp"></span>${(ME.role==="ADMIN"||f.uploadedBy?.id===ME.id)?`<button class="bare" data-fdel="${f.id}">✕</button>`:""}</div>`).join("")
         :'<div class="empty">No files</div>';
-      $$("[data-fdel]").forEach(b=>b.onclick=async()=>{await api("/api/files/"+b.dataset.fdel,{method:"DELETE"});loadFiles();});});
+      $$("[data-fdel]").forEach(b=>b.onclick=async()=>{try{await api("/api/files/"+b.dataset.fdel,{method:"DELETE"});}catch(e){alert(e.message);}loadFiles();});});
     loadComments();loadFiles();loadHistory();
     const postComment=async()=>{
       const t=$("#cnew").value.trim();
@@ -888,7 +926,7 @@ function storyDrawer(s,projectId){
     const body={name:$("#sn").value,description:$("#sd").value,module:$("#sm").value,type:$("#sty").value,
       priority:$("#spr").value,storyStatus:$("#sst").value,dueDate:$("#sdd").value||null,
       storyPoints:$("#spt").value===""?null:Number($("#spt").value),
-      assignedTo:{id:Number($("#sa").value)},...(isNew?{reporter:{id:Number($("#sr").value)},project:{id:projectId}}:{})};
+      assignedTo:{id:Number($("#sa").value)},...(isNew?{project:{id:projectId}}:{})};
     try{
       if(isNew) await api("/api/pm-stories",{method:"POST",body:JSON.stringify(body)});
       else await api("/api/pm-stories/"+s.id,{method:"PUT",body:JSON.stringify(body)});

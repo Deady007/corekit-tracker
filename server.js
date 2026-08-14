@@ -144,15 +144,27 @@ function sendMail(to, subject, text, html) {
   return new Promise((resolve) => {
     if (!smtpConfigured()) return resolve(false);
     const sock = tlsConnect({ host: SMTP.host, port: SMTP.port, servername: SMTP.host });
+    // full RFC 5322 headers + multipart/alternative (plain + HTML) — missing
+    // Date/Message-ID and HTML-only bodies are strong spam signals
+    const fromDomain = String(SMTP.from).split("@")[1] || "corekit.me";
+    const msgId = `<${Date.now()}.${randomBytes(9).toString("base64url")}@${fromDomain}>`;
+    const date = new Date().toUTCString().replace(/GMT$/, "+0000");
+    const plain = text || String(html || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+    const boundary = `ck_${randomBytes(12).toString("hex")}`;
+    const body = html
+      ? `Content-Type: multipart/alternative; boundary="${boundary}"\r\n\r\n` +
+        `--${boundary}\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n${plain}\r\n\r\n` +
+        `--${boundary}\r\nContent-Type: text/html; charset=utf-8\r\n\r\n${html}\r\n\r\n--${boundary}--`
+      : `Content-Type: text/plain; charset=utf-8\r\n\r\n${plain}`;
     const steps = [
-      `EHLO corekit.me`,
+      `EHLO ${fromDomain}`,
       `AUTH LOGIN`,
       Buffer.from(SMTP.user).toString("base64"),
       Buffer.from(SMTP.pass).toString("base64"),
       `MAIL FROM:<${SMTP.from}>`,
       `RCPT TO:<${to}>`,
       `DATA`,
-      (`From: CoreKit Tracker <${SMTP.from}>\r\nTo: <${to}>\r\nSubject: ${subject}\r\nMIME-Version: 1.0\r\nContent-Type: ${html ? "text/html" : "text/plain"}; charset=utf-8\r\n\r\n${(html || text)}`)
+      (`From: CoreKit Tracker <${SMTP.from}>\r\nTo: <${to}>\r\nSubject: ${subject}\r\nDate: ${date}\r\nMessage-ID: ${msgId}\r\nMIME-Version: 1.0\r\n${body}`)
         .replace(/\r\n\./g, "\r\n..") + `\r\n.`,
     ];
     let i = 0, ok = false, buf = "";
@@ -308,11 +320,11 @@ function computeAnalytics(user, projectId) {
     devs: [...devs.values()].sort((a, b) => b.score - a.score) };
 }
 
-// Role scoping: ADMIN and DEVLEAD see everything; everyone else sees only
-// projects they belong to (project assignee list / project owner) or where
-// they have stories. Returns null for "all", else a Set of project ids.
+// Role scoping: only ADMIN sees everything; everyone else (including DEVLEAD)
+// sees only projects they belong to (project assignee list / project owner)
+// or where they have stories. Returns null for "all", else a Set of project ids.
 function visibleProjectIds(user) {
-  if (user.role === "ADMIN" || user.role === "DEVLEAD") return null;
+  if (user.role === "ADMIN") return null;
   const ids = new Set();
   for (const p of db.prepare("SELECT id, assignees, assignedToId FROM projects").all()) {
     const members = String(p.assignees || "").split(",").map(Number);
@@ -321,6 +333,14 @@ function visibleProjectIds(user) {
   for (const r of db.prepare("SELECT DISTINCT projectId pid FROM stories WHERE assignedToId=? OR reporterId=?").all(user.id, user.id))
     ids.add(r.pid);
   return ids;
+}
+
+const isProjectMember = (p, user) =>
+  p.assignedToId === user.id || String(p.assignees || "").split(",").map(Number).includes(user.id);
+
+function canSeeProject(user, projectId) {
+  const vis = visibleProjectIds(user);
+  return !vis || vis.has(Number(projectId));
 }
 
 // ---------------------------------------------------------------------------
@@ -494,8 +514,9 @@ route("POST", "/api/pm-projects", (req) => {
 route("PUT", "/api/pm-projects/(\\d+)", (req, [id]) => {
   const p = getProject(id);
   if (!p) return { status: 404, json: { error: "not found" } };
-  const canEdit = req.user.role === "ADMIN" || req.user.role === "DEVLEAD" || p.assignedToId === req.user.id;
-  if (!canEdit) return { status: 403, json: { error: "Only admins, dev leads or the project owner can edit a project" } };
+  const canEdit = req.user.role === "ADMIN" || p.assignedToId === req.user.id ||
+    (req.user.role === "DEVLEAD" && isProjectMember(p, req.user));
+  if (!canEdit) return { status: 403, json: { error: "Only admins, the project owner, or a dev lead on this project can edit it" } };
   const b = req.body || {};
   db.prepare(`UPDATE projects SET name=?, description=?, priority=?, projectStatus=?, dueDate=?, assignees=?, assignedToId=?, modifiedDate=?, category=?, targetDate=? WHERE id=?`)
     .run(b.name ?? p.name, b.description ?? p.description, b.priority ?? p.priority,
@@ -522,6 +543,10 @@ route("PUT", "/api/pm-projects/(\\d+)", (req, [id]) => {
 });
 
 route("DELETE", "/api/pm-projects/(\\d+)", (req, [id]) => {
+  const p = getProject(id);
+  if (!p) return { status: 404, json: { error: "not found" } };
+  if (req.user.role !== "ADMIN" && p.assignedToId !== req.user.id)
+    return { status: 403, json: { error: "Only admins or the project owner can delete a project" } };
   const hasStories = db.prepare("SELECT COUNT(*) c FROM stories WHERE projectId=?").get(id).c;
   if (hasStories && req.user.role !== "ADMIN")
     return { status: 409, json: { error: "project has stories — only an admin can delete it (cascades)" } };
@@ -553,20 +578,23 @@ route("GET", "/api/pm-stories", (req) => {
 
 route("GET", "/api/pm-stories/(\\d+)", (req, [id]) => {
   const s = db.prepare("SELECT * FROM stories WHERE id=?").get(id);
-  return s ? { json: storyShape(s) } : { status: 404, json: { error: "not found" } };
+  if (!s || !canSeeProject(req.user, s.projectId)) return { status: 404, json: { error: "not found" } };
+  return { json: storyShape(s) };
 });
 
 route("POST", "/api/pm-stories", (req) => {
+  if (req.user.role === "DEV") return { status: 403, json: { error: "Developers can't create items — ask your dev lead or a reporter" } };
   const b = req.body || {};
   const p = b.project?.id && getProject(b.project.id);
   if (!b.name || !p) return { status: 400, json: { error: "name and project.id required" } };
+  if (!canSeeProject(req.user, p.id)) return { status: 403, json: { error: "You're not on this project" } };
   const seq = (db.prepare("SELECT COALESCE(MAX(seq),0) m FROM stories WHERE projectId=?").get(p.id).m) + 1;
   const assignee = b.assignedTo?.id ?? req.user.id;
   const r = db.prepare(`INSERT INTO stories (projectId,seq,number,name,description,module,type,priority,storyPoints,storyStatus,dueDate,assignedToId,reporterId,createdDate,modifiedDate)
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
     .run(p.id, seq, `${p.key}-${seq}`, b.name, b.description || "", b.module || "",
       b.type || "Story", b.priority || "Medium", b.storyPoints ?? null, b.storyStatus || "Backlog",
-      b.dueDate ?? null, assignee, b.reporter?.id ?? req.user.id, now(), now());
+      b.dueDate ?? null, assignee, req.user.id, now(), now()); // reporter is always the creator
   const s = db.prepare("SELECT * FROM stories WHERE id=?").get(r.lastInsertRowid);
   notify(assignee, req.user.id, `${s.number} "${s.name}" assigned to you`, s.id);
   if (assignee !== req.user.id) mailNotify(assignee, {
@@ -582,15 +610,16 @@ route("POST", "/api/pm-stories", (req) => {
 
 route("PUT", "/api/pm-stories/(\\d+)", (req, [id]) => {
   const s = db.prepare("SELECT * FROM stories WHERE id=?").get(id);
-  if (!s) return { status: 404, json: { error: "not found" } };
+  if (!s || !canSeeProject(req.user, s.projectId)) return { status: 404, json: { error: "not found" } };
   const b = req.body || {};
   const newAssignee = b.assignedTo?.id !== undefined ? b.assignedTo.id : s.assignedToId;
   const newStatus = b.storyStatus ?? s.storyStatus;
-  db.prepare(`UPDATE stories SET name=?, description=?, module=?, type=?, priority=?, storyPoints=?, storyStatus=?, dueDate=?, assignedToId=?, reporterId=?, modifiedDate=? WHERE id=?`)
+  // reporterId is immutable — always whoever created the story
+  db.prepare(`UPDATE stories SET name=?, description=?, module=?, type=?, priority=?, storyPoints=?, storyStatus=?, dueDate=?, assignedToId=?, modifiedDate=? WHERE id=?`)
     .run(b.name ?? s.name, b.description ?? s.description, b.module ?? s.module, b.type ?? s.type,
       b.priority ?? s.priority, b.storyPoints !== undefined ? b.storyPoints : s.storyPoints,
       newStatus, b.dueDate !== undefined ? b.dueDate : s.dueDate,
-      newAssignee, b.reporter?.id ?? s.reporterId, now(), s.id);
+      newAssignee, now(), s.id);
   const storyCta = { label: "Open board", url: `${PUBLIC_URL}/#/board/${s.projectId}` };
   if (newAssignee !== s.assignedToId) {
     notify(newAssignee, req.user.id, `${s.number} "${s.name}" assigned to you`, s.id);
@@ -635,13 +664,17 @@ route("PUT", "/api/pm-stories/(\\d+)", (req, [id]) => {
   }
   if (String(s.description ?? "") !== String(after.description ?? "")) recordHistory(s.id, req.user.id, "description", null, "updated");
   if (s.assignedToId !== after.assignedToId) recordHistory(s.id, req.user.id, "assignedTo", uname(s.assignedToId), uname(after.assignedToId));
-  if (s.reporterId !== after.reporterId) recordHistory(s.id, req.user.id, "reporter", uname(s.reporterId), uname(after.reporterId));
   return { json: storyShape(db.prepare("SELECT * FROM stories WHERE id=?").get(s.id)) };
 });
 
 route("DELETE", "/api/pm-stories/(\\d+)", (req, [id]) => {
-  if (req.user.role !== "ADMIN" && req.user.role !== "DEVLEAD")
-    return { status: 403, json: { error: "Only admins and dev leads can delete items" } };
+  const s = db.prepare("SELECT * FROM stories WHERE id=?").get(Number(id));
+  if (!s || !canSeeProject(req.user, s.projectId)) return { status: 404, json: { error: "not found" } };
+  // ADMIN deletes anything; DEVLEAD only items they reported or in projects they own
+  const p = getProject(s.projectId);
+  const leadOwns = req.user.role === "DEVLEAD" && (s.reporterId === req.user.id || p?.assignedToId === req.user.id);
+  if (req.user.role !== "ADMIN" && !leadOwns)
+    return { status: 403, json: { error: "Only admins can delete this — dev leads can only delete items they reported or in projects they own" } };
   for (const a of db.prepare("SELECT path FROM attachments WHERE storyId=?").all(Number(id))) {
     try { unlinkSync(join(FILES_DIR, a.path)); } catch {}
   }
@@ -656,15 +689,17 @@ const commentShape = (c) => ({
   imageUrl: c.imagePath ? `/api/pm-comments/${c.id}/image` : null,
 });
 
-route("GET", "/api/pm-comments", (req) => ({
-  json: db.prepare("SELECT * FROM comments WHERE storyId=? ORDER BY createdDate").all(Number(req.query.storyId || 0)).map(commentShape),
-}));
+route("GET", "/api/pm-comments", (req) => {
+  const s = db.prepare("SELECT projectId FROM stories WHERE id=?").get(Number(req.query.storyId || 0));
+  if (!s || !canSeeProject(req.user, s.projectId)) return { json: [] };
+  return { json: db.prepare("SELECT * FROM comments WHERE storyId=? ORDER BY createdDate").all(Number(req.query.storyId)).map(commentShape) };
+});
 
 route("POST", "/api/pm-comments", (req) => {
   const { storyId, text, imageBase64, imageMime } = req.body || {};
   if (!storyId || (!text && !imageBase64)) return { status: 400, json: { error: "storyId and text or image required" } };
   const s = db.prepare("SELECT * FROM stories WHERE id=?").get(Number(storyId));
-  if (!s) return { status: 404, json: { error: "story not found" } };
+  if (!s || !canSeeProject(req.user, s.projectId)) return { status: 404, json: { error: "story not found" } };
   let imagePath = null;
   if (imageBase64) {
     const buf = Buffer.from(imageBase64, "base64");
@@ -697,11 +732,13 @@ route("GET", "/api/pm-comments/(\\d+)/image", (req, [id]) => {
 });
 
 // --- story history (audit trail)
-route("GET", "/api/pm-history", (req) => ({
-  json: db.prepare("SELECT * FROM history WHERE storyId=? ORDER BY createdDate DESC, id DESC").all(Number(req.query.storyId || 0))
+route("GET", "/api/pm-history", (req) => {
+  const s = db.prepare("SELECT projectId FROM stories WHERE id=?").get(Number(req.query.storyId || 0));
+  if (!s || !canSeeProject(req.user, s.projectId)) return { json: [] };
+  return { json: db.prepare("SELECT * FROM history WHERE storyId=? ORDER BY createdDate DESC, id DESC").all(Number(req.query.storyId))
     .map((h) => ({ id: h.id, field: h.field, oldValue: h.oldValue, newValue: h.newValue,
-      createdDate: h.createdDate, user: userShape(getUser(h.userId)) })),
-}));
+      createdDate: h.createdDate, user: userShape(getUser(h.userId)) })) };
+});
 
 // --- attachments (JSON+base64 upload keeps the server dependency-free)
 const FILES_DIR = join(ROOT, "data", "files");
@@ -711,15 +748,17 @@ const attachShape = (a) => ({
   url: `/api/files/${a.id}/download`,
 });
 
-route("GET", "/api/files", (req) => ({
-  json: db.prepare("SELECT * FROM attachments WHERE storyId=? ORDER BY createdDate").all(Number(req.query.storyId || 0)).map(attachShape),
-}));
+route("GET", "/api/files", (req) => {
+  const s = db.prepare("SELECT projectId FROM stories WHERE id=?").get(Number(req.query.storyId || 0));
+  if (!s || !canSeeProject(req.user, s.projectId)) return { json: [] };
+  return { json: db.prepare("SELECT * FROM attachments WHERE storyId=? ORDER BY createdDate").all(Number(req.query.storyId)).map(attachShape) };
+});
 
 route("POST", "/api/files", (req) => {
   const { storyId, filename, dataBase64, mime } = req.body || {};
   if (!storyId || !filename || !dataBase64) return { status: 400, json: { error: "storyId, filename, dataBase64 required" } };
   const s = db.prepare("SELECT * FROM stories WHERE id=?").get(Number(storyId));
-  if (!s) return { status: 404, json: { error: "story not found" } };
+  if (!s || !canSeeProject(req.user, s.projectId)) return { status: 404, json: { error: "story not found" } };
   const buf = Buffer.from(dataBase64, "base64");
   if (buf.length > 25 * 1024 * 1024) return { status: 413, json: { error: "max 25 MB" } };
   const safe = String(filename).replace(/[^\w.() -]/g, "_").slice(-120);
@@ -747,6 +786,11 @@ route("GET", "/api/files/(\\d+)/download", (req, [id], res) => {
 });
 
 route("DELETE", "/api/files/(\\d+)", (req, [id]) => {
+  const a = db.prepare("SELECT * FROM attachments WHERE id=?").get(Number(id));
+  if (!a) return { status: 404, json: { error: "not found" } };
+  if (req.user.role !== "ADMIN" && a.uploadedById !== req.user.id)
+    return { status: 403, json: { error: "Only admins or the uploader can delete a file" } };
+  try { unlinkSync(join(FILES_DIR, a.path)); } catch {}
   db.prepare("DELETE FROM attachments WHERE id=?").run(Number(id));
   return { json: { deleted: true } };
 });

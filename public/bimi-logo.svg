@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" version="1.2" baseProfile="tiny-ps" viewBox="0 0 512 512">
+  <title>Trivyah Task Manager</title>
+  <rect width="512" height="512" fill="#1A1A1A"/>
+  <rect x="118" y="146" width="276" height="60" fill="#FF7A00"/>
+  <rect x="226" y="146" width="60" height="236" fill="#FF7A00"/>
+  <circle cx="378" cy="378" r="50" fill="#FFFFFF"/>
+  <polyline points="356,379 372,395 404,359" fill="none" stroke="#FF7A00" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

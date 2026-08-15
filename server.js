@@ -104,14 +104,27 @@ const getUser = (id) => id == null ? null : db.prepare("SELECT * FROM users WHER
 const CATEGORIES = new Set(["client", "product", "internal"]);
 const normCategory = (c) => (CATEGORIES.has(c) ? c : "client");
 
+const customerShape = (c) => c && {
+  id: c.id, customerNumber: c.customerNumber, name: c.name,
+  contactName: c.contactName || null, phone: c.phone || null, email: c.email || null,
+  createdDate: c.createdDate, modifiedDate: c.modifiedDate,
+};
+const getCustomer = (id) => id == null ? null : db.prepare("SELECT * FROM customers WHERE id=?").get(id);
+const nextCustomerNumber = () => {
+  let max = 0;
+  for (const r of db.prepare("SELECT customerNumber FROM customers").all()) {
+    const n = Number(String(r.customerNumber).replace(/\D/g, "")); if (n > max) max = n;
+  }
+  return "CUST-" + String(max + 1).padStart(4, "0");
+};
+
 const projectShape = (p) => p && {
   id: p.id, createdDate: p.createdDate, modifiedDate: p.modifiedDate,
   name: p.name, description: p.description, key: p.key, dueDate: p.dueDate,
   priority: p.priority, assignees: p.assignees, projectStatus: p.projectStatus,
   category: p.category || "client", targetDate: p.targetDate ?? null,
   assignedTo: userShape(getUser(p.assignedToId)),
-  clientName: p.clientName || null, clientContactName: p.clientContactName || null,
-  clientPhone: p.clientPhone || null, clientEmail: p.clientEmail || null,
+  customerId: p.customerId ?? null, customer: customerShape(getCustomer(p.customerId)),
   version: p.version || null,
 };
 const getProject = (id) => db.prepare("SELECT * FROM projects WHERE id=?").get(id);
@@ -126,8 +139,16 @@ const storyShape = (s) => s && {
   project: projectShape(getProject(s.projectId)),
 };
 
-function notify(userId, actorId, text, storyId) {
+const NOTIF_TYPES = ["added", "assigned", "status", "comment", "file"];
+function canNotify(projectId, type, channel) {
+  if (!projectId || !type) return true; // no context to check against — don't block
+  const row = db.prepare("SELECT inApp, email FROM project_notification_settings WHERE projectId=? AND type=?").get(projectId, type);
+  if (!row) return true; // no override row — default is enabled
+  return channel === "email" ? !!row.email : !!row.inApp;
+}
+function notify(userId, actorId, text, storyId, ctx) {
   if (!userId || userId === actorId) return;
+  if (ctx && !canNotify(ctx.projectId, ctx.type, "inApp")) return;
   db.prepare("INSERT INTO notifications (userId, text, storyId, createdDate) VALUES (?,?,?,?)")
     .run(userId, text, storyId ?? null, now());
 }
@@ -228,8 +249,9 @@ function emailHtml({ heading, intro, rows = [], cta }) {
 }
 
 // fire-and-forget notification mail — never blocks the API response
-function mailNotify(userId, { subject, heading, intro, rows, cta }) {
+function mailNotify(userId, { subject, heading, intro, rows, cta }, ctx) {
   if (!smtpConfigured()) return;
+  if (ctx && !canNotify(ctx.projectId, ctx.type, "email")) return;
   const u = getUser(userId);
   if (!u || !u.email || !u.enabled) return;
   sendMail(u.email, subject, intro.replace(/<[^>]+>/g, ""), emailHtml({ heading, intro, rows, cta }))
@@ -438,7 +460,7 @@ route("POST", "/api/users/(\\d+)/reset-link", async (req, [id]) => {
 // --- RBAC: which roles can see which top-level nav pages/sections.
 // This is a UI-organization layer, not a data security boundary — project data
 // access is still governed entirely by visibleProjectIds()/canSeeProject().
-const RBAC_PAGES = ["dashboard", "tasks", "command", "products", "clients", "internal", "team"];
+const RBAC_PAGES = ["dashboard", "tasks", "command", "products", "clients", "internal", "customers", "team"];
 const RBAC_ROLES = ["DEV", "DEVLEAD", "ADMIN"];
 route("GET", "/api/rbac", () => {
   const rows = db.prepare("SELECT * FROM page_access").all();
@@ -523,6 +545,47 @@ route("DELETE", "/api/users/(\\d+)", (req, [id]) => {
   return { json: { deleted: true, id: u.id } };
 });
 
+// --- customers (one per client — client projects must attach one; the
+// customerNumber is what disambiguates two customers sharing a display name)
+route("GET", "/api/customers", () => {
+  const rows = db.prepare("SELECT * FROM customers ORDER BY name").all();
+  const counts = new Map();
+  for (const p of db.prepare("SELECT customerId FROM projects WHERE customerId IS NOT NULL").all())
+    counts.set(p.customerId, (counts.get(p.customerId) || 0) + 1);
+  return { json: rows.map((c) => ({ ...customerShape(c), projectCount: counts.get(c.id) || 0 })) };
+});
+
+route("POST", "/api/customers", (req) => {
+  if (req.user.role === "DEV") return { status: 403, json: { error: "Dev leads or admins only" } };
+  const b = req.body || {};
+  if (!b.name) return { status: 400, json: { error: "name required" } };
+  const num = nextCustomerNumber();
+  const r = db.prepare("INSERT INTO customers (customerNumber,name,contactName,phone,email,createdDate,modifiedDate) VALUES (?,?,?,?,?,?,?)")
+    .run(num, b.name, b.contactName || null, b.phone || null, b.email || null, now(), now());
+  return { json: customerShape(getCustomer(r.lastInsertRowid)) };
+});
+
+route("PUT", "/api/customers/(\\d+)", (req, [id]) => {
+  if (req.user.role === "DEV") return { status: 403, json: { error: "Dev leads or admins only" } };
+  const c = getCustomer(id);
+  if (!c) return { status: 404, json: { error: "not found" } };
+  const b = req.body || {};
+  db.prepare("UPDATE customers SET name=?, contactName=?, phone=?, email=?, modifiedDate=? WHERE id=?")
+    .run(b.name ?? c.name, b.contactName !== undefined ? b.contactName : c.contactName,
+      b.phone !== undefined ? b.phone : c.phone, b.email !== undefined ? b.email : c.email, now(), c.id);
+  return { json: customerShape(getCustomer(c.id)) };
+});
+
+route("DELETE", "/api/customers/(\\d+)", (req, [id]) => {
+  if (req.user.role !== "ADMIN") return { status: 403, json: { error: "Admin only" } };
+  const c = getCustomer(id);
+  if (!c) return { status: 404, json: { error: "not found" } };
+  const linked = db.prepare("SELECT COUNT(*) n FROM projects WHERE customerId=?").get(c.id).n;
+  if (linked) return { status: 409, json: { error: `${linked} project(s) still use this customer — reassign them first` } };
+  db.prepare("DELETE FROM customers WHERE id=?").run(c.id);
+  return { json: { deleted: true } };
+});
+
 // --- projects
 route("GET", "/api/pm-projects", (req) => {
   const vis = visibleProjectIds(req.user);
@@ -533,15 +596,16 @@ route("GET", "/api/pm-projects", (req) => {
 route("POST", "/api/pm-projects", (req) => {
   const b = req.body || {};
   if (!b.name || !b.key) return { status: 400, json: { error: "name and key required" } };
+  const category = normCategory(b.category);
+  if (category === "client" && !b.customerId) return { status: 400, json: { error: "A client project must have a customer attached" } };
+  if (b.customerId && !getCustomer(Number(b.customerId))) return { status: 400, json: { error: "customer not found" } };
   const key = String(b.key).toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
   if (db.prepare("SELECT 1 FROM projects WHERE key=?").get(key)) return { status: 409, json: { error: "key already exists" } };
-  const r = db.prepare(`INSERT INTO projects (key,name,description,priority,projectStatus,dueDate,assignees,assignedToId,createdDate,modifiedDate,category,targetDate,clientName,clientContactName,clientPhone,clientEmail,version)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+  const r = db.prepare(`INSERT INTO projects (key,name,description,priority,projectStatus,dueDate,assignees,assignedToId,createdDate,modifiedDate,category,targetDate,customerId,version)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
     .run(key, b.name, b.description || "", b.priority || "Medium", b.projectStatus || "Active",
       b.dueDate ?? null, b.assignees || String(req.user.id), b.assignedTo?.id ?? req.user.id, now(), now(),
-      normCategory(b.category), b.targetDate ?? null,
-      b.clientName || null, b.clientContactName || null, b.clientPhone || null, b.clientEmail || null,
-      b.version || null);
+      category, b.targetDate ?? null, b.customerId ? Number(b.customerId) : null, b.version || null);
   return { json: projectShape(getProject(r.lastInsertRowid)) };
 });
 
@@ -552,33 +616,63 @@ route("PUT", "/api/pm-projects/(\\d+)", (req, [id]) => {
     (req.user.role === "DEVLEAD" && isProjectMember(p, req.user));
   if (!canEdit) return { status: 403, json: { error: "Only admins, the project owner, or a dev lead on this project can edit it" } };
   const b = req.body || {};
-  db.prepare(`UPDATE projects SET name=?, description=?, priority=?, projectStatus=?, dueDate=?, assignees=?, assignedToId=?, modifiedDate=?, category=?, targetDate=?, clientName=?, clientContactName=?, clientPhone=?, clientEmail=?, version=? WHERE id=?`)
+  const category = b.category !== undefined ? normCategory(b.category) : (p.category || "client");
+  const customerId = b.customerId !== undefined ? (b.customerId ? Number(b.customerId) : null) : p.customerId;
+  if (category === "client" && !customerId) return { status: 400, json: { error: "A client project must have a customer attached" } };
+  if (customerId && !getCustomer(customerId)) return { status: 400, json: { error: "customer not found" } };
+  db.prepare(`UPDATE projects SET name=?, description=?, priority=?, projectStatus=?, dueDate=?, assignees=?, assignedToId=?, modifiedDate=?, category=?, targetDate=?, customerId=?, version=? WHERE id=?`)
     .run(b.name ?? p.name, b.description ?? p.description, b.priority ?? p.priority,
       b.projectStatus ?? p.projectStatus, b.dueDate !== undefined ? b.dueDate : p.dueDate,
       b.assignees ?? p.assignees, b.assignedTo?.id ?? p.assignedToId, now(),
-      b.category !== undefined ? normCategory(b.category) : (p.category || "client"),
-      b.targetDate !== undefined ? b.targetDate : p.targetDate,
-      b.clientName !== undefined ? b.clientName : p.clientName,
-      b.clientContactName !== undefined ? b.clientContactName : p.clientContactName,
-      b.clientPhone !== undefined ? b.clientPhone : p.clientPhone,
-      b.clientEmail !== undefined ? b.clientEmail : p.clientEmail,
-      b.version !== undefined ? b.version : p.version, p.id);
+      category, b.targetDate !== undefined ? b.targetDate : p.targetDate,
+      customerId, b.version !== undefined ? b.version : p.version, p.id);
   // notify people newly added to the project
   if (b.assignees !== undefined) {
     const before = new Set(String(p.assignees || "").split(",").map(Number).filter(Boolean));
     for (const uid of String(b.assignees || "").split(",").map(Number).filter(Boolean)) {
       if (before.has(uid)) continue;
-      notify(uid, req.user.id, `You were added to project ${p.key} — ${p.name}`, null);
+      notify(uid, req.user.id, `You were added to project ${p.key} — ${p.name}`, null, { projectId: p.id, type: "added" });
       if (uid !== req.user.id) mailNotify(uid, {
         subject: `You were added to ${p.key} — ${b.name ?? p.name}`,
         heading: "Added to project",
         intro: `<b>${escHtml(req.user.displayName)}</b> added you to <b>${escHtml(b.name ?? p.name)}</b>. You can now see its board and stories.`,
         rows: [["Project", `${p.key} — ${b.name ?? p.name}`], ["Priority", b.priority ?? p.priority], ["Due", b.dueDate !== undefined ? b.dueDate : p.dueDate]],
         cta: { label: "Open board", url: `${PUBLIC_URL}/#/board/${p.id}` },
-      });
+      }, { projectId: p.id, type: "added" });
     }
   }
   return { json: projectShape(getProject(p.id)) };
+});
+
+// --- per-project notification settings (in-app + email, per notification type)
+route("GET", "/api/pm-projects/(\\d+)/notifications", (req, [id]) => {
+  const p = getProject(id);
+  if (!p || !canSeeProject(req.user, p.id)) return { status: 404, json: { error: "not found" } };
+  const rows = db.prepare("SELECT type,inApp,email FROM project_notification_settings WHERE projectId=?").all(p.id);
+  const byType = new Map(rows.map((r) => [r.type, r]));
+  return { json: NOTIF_TYPES.map((type) => ({
+    type, inApp: byType.has(type) ? !!byType.get(type).inApp : true, email: byType.has(type) ? !!byType.get(type).email : true,
+  })) };
+});
+
+route("PUT", "/api/pm-projects/(\\d+)/notifications", (req, [id]) => {
+  const p = getProject(id);
+  if (!p) return { status: 404, json: { error: "not found" } };
+  const canEdit = req.user.role === "ADMIN" || p.assignedToId === req.user.id ||
+    (req.user.role === "DEVLEAD" && isProjectMember(p, req.user));
+  if (!canEdit) return { status: 403, json: { error: "Only admins, the project owner, or a dev lead on this project can edit it" } };
+  const b = req.body || {};
+  const upsert = db.prepare(`INSERT INTO project_notification_settings (projectId,type,inApp,email) VALUES (?,?,?,?)
+    ON CONFLICT(projectId,type) DO UPDATE SET inApp=excluded.inApp, email=excluded.email`);
+  for (const type of NOTIF_TYPES) {
+    if (!(type in b)) continue;
+    upsert.run(p.id, type, b[type].inApp !== false ? 1 : 0, b[type].email !== false ? 1 : 0);
+  }
+  const rows = db.prepare("SELECT type,inApp,email FROM project_notification_settings WHERE projectId=?").all(p.id);
+  const byType = new Map(rows.map((r) => [r.type, r]));
+  return { json: NOTIF_TYPES.map((type) => ({
+    type, inApp: byType.has(type) ? !!byType.get(type).inApp : true, email: byType.has(type) ? !!byType.get(type).email : true,
+  })) };
 });
 
 route("DELETE", "/api/pm-projects/(\\d+)", (req, [id]) => {
@@ -633,14 +727,14 @@ route("POST", "/api/pm-stories", (req) => {
       b.type || "Story", b.priority || "Medium", b.storyPoints ?? null, b.storyStatus || "Backlog",
       b.dueDate ?? null, assignee, req.user.id, now(), now()); // reporter is always the creator
   const s = db.prepare("SELECT * FROM stories WHERE id=?").get(r.lastInsertRowid);
-  notify(assignee, req.user.id, `${s.number} "${s.name}" assigned to you`, s.id);
+  notify(assignee, req.user.id, `${s.number} "${s.name}" assigned to you`, s.id, { projectId: p.id, type: "assigned" });
   if (assignee !== req.user.id) mailNotify(assignee, {
     subject: `[${s.number}] assigned to you — ${s.name}`,
     heading: "New assignment",
     intro: `<b>${escHtml(req.user.displayName)}</b> assigned you a ${escHtml(s.type.toLowerCase())} in <b>${escHtml(p.name)}</b>.`,
     rows: [["Item", `${s.number} — ${s.name}`], ["Priority", s.priority], ["Points", s.storyPoints], ["Due", s.dueDate], ["Module", s.module]],
     cta: { label: "Open board", url: `${PUBLIC_URL}/#/board/${p.id}` },
-  });
+  }, { projectId: p.id, type: "assigned" });
   recordHistory(s.id, req.user.id, "created", null, s.number);
   return { json: storyShape(s) };
 });
@@ -659,14 +753,14 @@ route("PUT", "/api/pm-stories/(\\d+)", (req, [id]) => {
       newAssignee, now(), s.id);
   const storyCta = { label: "Open board", url: `${PUBLIC_URL}/#/board/${s.projectId}` };
   if (newAssignee !== s.assignedToId) {
-    notify(newAssignee, req.user.id, `${s.number} "${s.name}" assigned to you`, s.id);
+    notify(newAssignee, req.user.id, `${s.number} "${s.name}" assigned to you`, s.id, { projectId: s.projectId, type: "assigned" });
     if (newAssignee !== req.user.id) mailNotify(newAssignee, {
       subject: `[${s.number}] assigned to you — ${s.name}`,
       heading: "New assignment",
       intro: `<b>${escHtml(req.user.displayName)}</b> reassigned this item to you.`,
       rows: [["Item", `${s.number} — ${b.name ?? s.name}`], ["Status", newStatus], ["Priority", b.priority ?? s.priority], ["Due", b.dueDate !== undefined ? b.dueDate : s.dueDate]],
       cta: storyCta,
-    });
+    }, { projectId: s.projectId, type: "assigned" });
   }
   if (newStatus !== s.storyStatus) {
     const moveMail = (uid) => uid !== req.user.id && mailNotify(uid, {
@@ -675,11 +769,11 @@ route("PUT", "/api/pm-stories/(\\d+)", (req, [id]) => {
       intro: `<b>${escHtml(req.user.displayName)}</b> moved <b>${escHtml(s.number)} — ${escHtml(s.name)}</b>.`,
       rows: [["From", s.storyStatus], ["To", newStatus]],
       cta: storyCta,
-    });
-    notify(s.reporterId, req.user.id, `${s.number} moved to ${newStatus}`, s.id);
+    }, { projectId: s.projectId, type: "status" });
+    notify(s.reporterId, req.user.id, `${s.number} moved to ${newStatus}`, s.id, { projectId: s.projectId, type: "status" });
     moveMail(s.reporterId);
     if (s.assignedToId !== s.reporterId) {
-      notify(s.assignedToId, req.user.id, `${s.number} moved to ${newStatus}`, s.id);
+      notify(s.assignedToId, req.user.id, `${s.number} moved to ${newStatus}`, s.id, { projectId: s.projectId, type: "status" });
       moveMail(s.assignedToId);
     }
   }
@@ -749,11 +843,11 @@ route("POST", "/api/pm-comments", (req) => {
     heading: "New comment",
     intro: `<b>${escHtml(req.user.displayName)}</b> commented on <b>${escHtml(s.number)} — ${escHtml(s.name)}</b>:<br><br><i>&ldquo;${escHtml(String(text || "").slice(0, 300))}${String(text || "").length > 300 ? "…" : ""}&rdquo;</i>${imagePath ? "<br><br>📎 includes an image" : ""}`,
     cta: { label: "Open board", url: `${PUBLIC_URL}/#/board/${s.projectId}` },
-  });
-  notify(s.assignedToId, req.user.id, `${req.user.displayName} commented on ${s.number}`, s.id);
+  }, { projectId: s.projectId, type: "comment" });
+  notify(s.assignedToId, req.user.id, `${req.user.displayName} commented on ${s.number}`, s.id, { projectId: s.projectId, type: "comment" });
   commentMail(s.assignedToId);
   if (s.reporterId !== s.assignedToId) {
-    notify(s.reporterId, req.user.id, `${req.user.displayName} commented on ${s.number}`, s.id);
+    notify(s.reporterId, req.user.id, `${req.user.displayName} commented on ${s.number}`, s.id, { projectId: s.projectId, type: "comment" });
     commentMail(s.reporterId);
   }
   return { json: commentShape(db.prepare("SELECT * FROM comments WHERE id=?").get(r.lastInsertRowid)) };
@@ -803,14 +897,14 @@ route("POST", "/api/files", (req) => {
   writeFileSync(join(FILES_DIR, rel), buf);
   const r = db.prepare("INSERT INTO attachments (storyId,filename,mime,size,path,uploadedById,createdDate) VALUES (?,?,?,?,?,?,?)")
     .run(s.id, safe, mime || "application/octet-stream", buf.length, rel, req.user.id, now());
-  notify(s.assignedToId, req.user.id, `${req.user.displayName} attached "${safe}" to ${s.number}`, s.id);
+  notify(s.assignedToId, req.user.id, `${req.user.displayName} attached "${safe}" to ${s.number}`, s.id, { projectId: s.projectId, type: "file" });
   if (s.assignedToId !== req.user.id) mailNotify(s.assignedToId, {
     subject: `[${s.number}] file attached — ${safe}`,
     heading: "New attachment",
     intro: `<b>${escHtml(req.user.displayName)}</b> attached a file to <b>${escHtml(s.number)} — ${escHtml(s.name)}</b>.`,
     rows: [["File", safe], ["Size", `${Math.max(1, Math.round(buf.length / 1024))} KB`]],
     cta: { label: "Open board", url: `${PUBLIC_URL}/#/board/${s.projectId}` },
-  });
+  }, { projectId: s.projectId, type: "file" });
   return { json: attachShape(db.prepare("SELECT * FROM attachments WHERE id=?").get(r.lastInsertRowid)) };
 });
 

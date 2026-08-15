@@ -162,6 +162,16 @@ CREATE TABLE IF NOT EXISTS page_access (
   page TEXT PRIMARY KEY,
   roles TEXT NOT NULL -- comma-separated: DEV,DEVLEAD,ADMIN
 );
+
+-- per-project notification preferences. No row for a (projectId,type) pair
+-- means "enabled" — this table only ever stores overrides/opt-outs.
+CREATE TABLE IF NOT EXISTS project_notification_settings (
+  projectId INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  type TEXT NOT NULL, -- added | assigned | status | comment | file
+  inApp INTEGER NOT NULL DEFAULT 1,
+  email INTEGER NOT NULL DEFAULT 1,
+  PRIMARY KEY (projectId, type)
+);
 `);
 
 // migration: roles simplified to DEV/DEVLEAD/ADMIN (USER retired)
@@ -174,6 +184,45 @@ for (const row of db.prepare("SELECT page, roles FROM page_access").all()) {
 // migration: lightweight version label for products
 try { db.exec("ALTER TABLE projects ADD COLUMN version TEXT"); } catch {}
 
+// migration: customers — a client project must attach one, identified by a
+// unique customer number so two customers sharing a display name never conflict
+db.exec(`
+CREATE TABLE IF NOT EXISTS customers (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  customerNumber TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  contactName TEXT,
+  phone TEXT,
+  email TEXT,
+  createdDate TEXT NOT NULL,
+  modifiedDate TEXT NOT NULL
+);
+`);
+try { db.exec("ALTER TABLE projects ADD COLUMN customerId INTEGER REFERENCES customers(id)"); } catch {}
+
+// backfill: turn each client project's free-text clientName/etc into its own
+// customer record (two projects sharing a clientName become two distinct
+// customers if their contact details differ — same-name collision is exactly
+// what customerNumber exists to resolve)
+{
+  const nextNumber = () => {
+    const rows = db.prepare("SELECT customerNumber FROM customers").all();
+    let max = 0;
+    for (const r of rows) { const n = Number(String(r.customerNumber).replace(/\D/g, "")); if (n > max) max = n; }
+    return "CUST-" + String(max + 1).padStart(4, "0");
+  };
+  const orphans = db.prepare(
+    "SELECT id, clientName, clientContactName, clientPhone, clientEmail FROM projects WHERE category='client' AND customerId IS NULL AND clientName IS NOT NULL AND clientName != ''"
+  ).all();
+  for (const p of orphans) {
+    const num = nextNumber();
+    const ts = new Date().toISOString();
+    const r = db.prepare("INSERT INTO customers (customerNumber,name,contactName,phone,email,createdDate,modifiedDate) VALUES (?,?,?,?,?,?,?)")
+      .run(num, p.clientName, p.clientContactName || null, p.clientPhone || null, p.clientEmail || null, ts, ts);
+    db.prepare("UPDATE projects SET customerId=? WHERE id=?").run(r.lastInsertRowid, p.id);
+  }
+}
+
 // migration: seed default RBAC page access (idempotent — only fills missing rows)
 const DEFAULT_PAGE_ACCESS = {
   dashboard: "DEV,DEVLEAD,ADMIN",
@@ -182,6 +231,7 @@ const DEFAULT_PAGE_ACCESS = {
   products: "DEV,DEVLEAD,ADMIN",
   clients: "DEV,DEVLEAD,ADMIN",
   internal: "DEV,DEVLEAD,ADMIN",
+  customers: "DEVLEAD,ADMIN",
   team: "ADMIN",
 };
 {

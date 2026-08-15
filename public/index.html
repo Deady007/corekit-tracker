@@ -14,24 +14,54 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-/* ============ NEOMORPHIC SYSTEM — 5 colors only ============
-   white / black / orange / red / blue. Soft-extruded surfaces via a dual
-   light+dark shadow pair (tints of white/black, not new hues), generous
-   radii, inset "pressed" fields instead of hard borders. */
+/* ============ MARBLE + GLASSMORPHISM + NEOMORPHISM ============
+   Polished-marble page background (soft veined gradients); frosted-glass
+   panels (translucent + backdrop-blur) floating on it; neomorphic dual
+   light/dark shadows give them soft extruded depth. Still 5 colors only —
+   white / black / orange / red / blue — glass tints are translucency of
+   the same white/black, not new hues. Borders are soft glass rims (a light
+   translucent edge) instead of flat hard lines. */
 :root{
-  --paper:#ECEDF0; --paper2:#E2E4E8; --white:#FFFFFF; --ink:#1A1A1A; --dim:#6E7075;
-  --orange:#FF7A00; --orange-tint:#FFE4C2; --red:#E63946; --red-tint:#FBDADC; --blue:#2F80ED; --blue-tint:#D9E8FD;
-  --line:rgba(0,0,0,.08); --accent:var(--orange);
-  --ns-hi:rgba(255,255,255,.85); --ns-lo:rgba(163,167,178,.55);
-  --shadow:6px 6px 14px var(--ns-lo),-6px -6px 14px var(--ns-hi);
-  --shadow-sm:3px 3px 8px var(--ns-lo),-3px -3px 8px var(--ns-hi);
+  --paper:rgba(237,238,241,.6); --paper2:rgba(223,225,230,.72);
+  --white:rgba(255,255,255,.78); --ink:#1A1A1A; --dim:#54575c;
+  --orange:#FF7A00; --orange-tint:rgba(255,196,130,.55); --red:#E63946; --red-tint:rgba(251,180,184,.55); --blue:#2F80ED; --blue-tint:rgba(179,209,250,.55);
+  --line:rgba(255,255,255,.8); --accent:var(--orange);
+  --ns-hi:rgba(255,255,255,.85); --ns-lo:rgba(130,134,146,.5);
+  --shadow:7px 7px 20px var(--ns-lo),-7px -7px 16px var(--ns-hi),inset 0 1px 0 rgba(255,255,255,.6);
+  --shadow-sm:3px 3px 11px var(--ns-lo),-3px -3px 9px var(--ns-hi),inset 0 1px 0 rgba(255,255,255,.55);
   --shadow-inset:inset 3px 3px 7px var(--ns-lo),inset -3px -3px 7px var(--ns-hi);
   --bd:1px solid var(--line);
+  --blur:20px;
   --radius:16px;
   --mono:'IBM Plex Mono',ui-monospace,monospace; --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html{background:var(--paper)}
+html{
+  background:
+    /* thin marble veins — varied angles/positions, kept faint */
+    linear-gradient(102deg, transparent 28%, rgba(90,92,98,.06) 29%, transparent 30.5%),
+    linear-gradient(96deg, transparent 45%, rgba(90,92,98,.045) 45.6%, transparent 46.8%),
+    linear-gradient(75deg, transparent 60%, rgba(255,122,0,.05) 60.6%, transparent 62%),
+    linear-gradient(112deg, transparent 68%, rgba(90,92,98,.05) 68.5%, transparent 70%),
+    linear-gradient(84deg, transparent 15%, rgba(90,92,98,.04) 15.5%, transparent 17%),
+    linear-gradient(130deg, transparent 82%, rgba(47,128,237,.04) 82.6%, transparent 84%),
+    /* soft color depth */
+    radial-gradient(ellipse 900px 550px at 12% 6%, rgba(255,255,255,.85), transparent 60%),
+    radial-gradient(ellipse 750px 650px at 90% 12%, rgba(255,122,0,.07), transparent 55%),
+    radial-gradient(ellipse 950px 750px at 22% 92%, rgba(30,30,30,.06), transparent 55%),
+    radial-gradient(ellipse 750px 550px at 88% 96%, rgba(47,128,237,.06), transparent 55%),
+    linear-gradient(160deg,#F5F4F2 0%,#E5E4E2 45%,#EDECEA 100%);
+  background-attachment:fixed;
+}
+/* frosted-glass surfaces: blur whatever marble/content sits behind them */
+aside,.topbar,.tile,.block,.block .bhead,th,.pcard,.prodcard,.prod-hero,
+.kcol,.kcol .khead,.card,.dsec,.dsec-h,.ndrop,.modal,.modal .mhead,.modal .mfoot,
+.drawer,.drawer .dhead,.drawer .dfoot,.dtabs,.login,.fchip,button:not(.bare){
+  backdrop-filter:blur(var(--blur));-webkit-backdrop-filter:blur(var(--blur));
+}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  :root{ --paper:#ECEDF0; --paper2:#E2E4E8; --white:#FFFFFF; --orange-tint:#FFE4C2; --red-tint:#FBDADC; --blue-tint:#D9E8FD; --line:rgba(0,0,0,.08); }
+}
 body{font-family:var(--sans);color:var(--ink);font-size:14px;line-height:1.5}
 .mono{font-family:var(--mono)}
 h1,h2,h3,h4{font-weight:700;letter-spacing:-.01em}
@@ -61,7 +91,9 @@ aside .logo{padding:20px 16px 16px}
 aside .logo .big{font-weight:700;font-size:17px;letter-spacing:-.01em;line-height:1.1}
 aside .logo .big b{color:var(--orange);font-weight:700}
 aside .logo .tag{font-family:var(--sans);font-size:11px;margin-top:3px;color:var(--dim)}
-aside nav{padding:6px 12px;display:flex;flex-direction:column;gap:3px}
+aside nav{padding:6px 12px;display:flex;flex-direction:column;gap:8px}
+.nav-group{display:flex;flex-direction:column;gap:3px}
+.nav-label{font-family:var(--sans);font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#9a9ba0;padding:8px 12px 2px}
 aside nav a{font-family:var(--sans);font-size:13.5px;font-weight:500;letter-spacing:0;text-transform:none;
   color:var(--dim);text-decoration:none;padding:9px 12px;border-radius:10px}
 aside nav a:hover{background:rgba(0,0,0,.04);color:var(--ink)}
@@ -76,6 +108,9 @@ aside .who button{margin-top:10px;width:100%}
 .topbar h1{font-size:20px;font-weight:700}
 .topbar .sub{font-family:var(--mono);font-size:11px;color:var(--dim)}
 .topbar .sp{flex:1}
+.tb-actions{display:flex;align-items:center;gap:8px}
+.tb-actions input[type=search]{width:200px}
+.tb-actions:empty{display:none}
 .bellwrap{position:relative}
 .bell .dot{position:absolute;top:-6px;right:-6px;background:var(--red);color:#fff;border:2px solid var(--white);border-radius:99px;font-size:10px;font-weight:700;padding:1px 6px}
 .ndrop{position:absolute;top:110%;right:0;width:380px;background:var(--white);border:var(--bd);box-shadow:var(--shadow);z-index:60;display:none;max-height:60vh;overflow-y:auto;border-radius:var(--radius)}
@@ -185,7 +220,7 @@ td.mono{font-size:11.5px}
 .dtab{font-family:var(--sans);font-size:12.5px;font-weight:600;padding:8px 14px;border:none;background:transparent;box-shadow:none;color:var(--dim);cursor:pointer;border-bottom:2px solid transparent;border-radius:0}
 .dtab:hover{background:transparent;color:var(--ink)}
 .dtab.on{color:var(--ink);border-bottom-color:var(--accent)}
-.dpane[hidden]{display:none}
+.dpane[hidden],.spane[hidden]{display:none}
 .dsec-h .n{color:var(--dim);letter-spacing:0;font-weight:500}
 .dsec-b{padding:2px 14px 14px}
 .dsec-b>label:first-child,.dsec-b .row2>div>label{margin-top:12px}
@@ -256,7 +291,10 @@ td.mono{font-size:11.5px}
     transform:translateX(-103%);transition:transform .16s ease;box-shadow:4px 0 20px rgba(15,15,15,.2)}
   aside.open{transform:none}
   .menu-btn{display:inline-block}
-  .topbar{padding:12px 14px;gap:10px}
+  .topbar{padding:12px 14px;gap:10px;flex-wrap:wrap}
+  .bellwrap{order:1}
+  .tb-actions{order:2;flex:1 1 100%;flex-wrap:wrap}
+  .tb-actions input[type=search]{width:100%}
   .topbar h1{font-size:17px}
   .topbar .sub{display:none}
   main{padding:16px 14px 70px}
@@ -267,6 +305,25 @@ td.mono{font-size:11.5px}
   .tiles{grid-template-columns:repeat(2,1fr);gap:10px}
   .tile .n{font-size:26px}
   .board-head input[type=search]{width:100%;order:9}
+
+  /* compact 3-up card grid on mobile */
+  .pgrid,.prod-grid{grid-template-columns:repeat(3,1fr);gap:8px}
+  .pcard,.prodcard{padding:8px;border-radius:10px}
+  .pcard .key,.prodcard .pc-key{font-size:8px;padding:1px 4px;letter-spacing:0}
+  .pcard h3,.prodcard h3{font-size:11px;margin:5px 0 2px;line-height:1.15}
+  .pcard .desc,.prodcard .pc-desc{display:none}
+  .pcard .foot{margin-top:6px;gap:4px}
+  .pcard .foot .stamp{font-size:7.5px;padding:1px 4px}
+  .pcard .foot .who{width:16px;height:16px;font-size:7px}
+  .prodcard .pc-top{gap:0}
+  .prodcard .pc-progress,.prodcard .pc-mini,.prodcard .pc-sugg,.prodcard .pc-target{display:none}
+
+  /* compact table: shrink until every header fits, no horizontal scroll */
+  .tbl-compact{table-layout:fixed;width:100%}
+  .tbl-compact th,.tbl-compact td{padding:4px 3px;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tbl-compact .stamp{padding:1px 4px;font-size:7.5px}
+  .tbl-compact .mono{font-size:8px}
+  .tbl-compact th{font-size:8px;letter-spacing:0}
 }
 /* kanban status tabs — mobile shows one column at a time */
 .ktabs{display:none}
@@ -278,17 +335,6 @@ td.mono{font-size:11.5px}
   .kanban{display:block}
   .kanban .kcol{display:none}
   .kanban .kcol.active{display:block}
-
-  /* tables become stacked cards — no horizontal scrolling */
-  table.cardify thead{display:none}
-  table.cardify, table.cardify tbody{display:block}
-  table.cardify tr{display:block;border-bottom:var(--bd);padding:10px 14px}
-  table.cardify tr:last-child{border-bottom:none}
-  table.cardify td{display:flex;justify-content:space-between;align-items:baseline;gap:12px;border:none;padding:3px 0;text-align:right}
-  table.cardify td::before{content:attr(data-l);font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);text-align:left;flex-shrink:0}
-  table.cardify td:first-child{font-size:14.5px;font-weight:600;text-align:left;justify-content:flex-start}
-  table.cardify td:first-child::before{display:none}
-  table.cardify td:empty{display:none}
 }
 </style>
 </head>
@@ -308,7 +354,7 @@ const stampCls=(v)=>String(v||"").replace(/\s/g,"");
 const stampLabel=(v)=>v==="Done"?"✓ Done":esc(v);
 const isPast=(d)=>d&&new Date(d)<new Date(new Date().toDateString());
 
-let ME=null, USERS=[], PROJECTS=[], STORIES=[], NOTIFS=[], BOARD_STORIES=[], BOARD_CRIT=new Map(), RBAC={};
+let ME=null, USERS=[], PROJECTS=[], STORIES=[], NOTIFS=[], BOARD_STORIES=[], BOARD_CRIT=new Map(), RBAC={}, CUSTOMERS=[];
 let FILTER={type:"all",assignee:"",q:""};
 const isLead=()=>ME&&(ME.role==="ADMIN"||ME.role==="DEVLEAD");
 const canSeePage=(page)=>ME&&(ME.role==="ADMIN"||(RBAC[page]||[]).includes(ME.role));
@@ -331,6 +377,7 @@ function route(){
   if(h.startsWith("#/products")) return {view:"products"};
   if(h.startsWith("#/clients")||h.startsWith("#/projects")) return {view:"clients"};
   if(h.startsWith("#/internal")) return {view:"internal"};
+  if(h.startsWith("#/customers")) return {view:"customers"};
   if(h.startsWith("#/command")) return {view:"command"};
   if(h.startsWith("#/team")) return {view:"team"};
   if(h.startsWith("#/access")) return {view:"access"};
@@ -345,7 +392,7 @@ async function boot(){
   const users=await api("/api/users");
   ME=users.find(u=>u.username===st.username);
   USERS=users.filter(u=>u.enabled);
-  [PROJECTS,RBAC]=await Promise.all([api("/api/pm-projects"),api("/api/rbac").catch(()=>({}))]);
+  [PROJECTS,RBAC,CUSTOMERS]=await Promise.all([api("/api/pm-projects"),api("/api/rbac").catch(()=>({})),api("/api/customers").catch(()=>[])]);
   await refreshNotifs();
   render();
 }
@@ -366,21 +413,33 @@ function render(){
   const r=r0;
   const unread=NOTIFS.filter(n=>!n.read).length;
   const boardProject=r.view==="board"?PROJECTS.find(p=>p.id===r.projectId):null;
-  const titles={dashboard:"My Dashboard",tasks:"All Tasks",command:"Command",products:"Products",clients:"Clients",internal:"Internal Works",team:"Team",access:"Access Control",board:boardProject?.name||"Board"};
+  const titles={dashboard:"My Dashboard",tasks:"All Tasks",command:"Command",products:"Products",clients:"Clients",internal:"Internal Works",customers:"Customers",team:"Team",access:"Access Control",board:boardProject?.name||"Board"};
   app.innerHTML=`
   <div class="shell">
     <aside>
       <div class="logo"><div class="big">Trivyah</div><div class="tag">Task Manager</div></div>
-      <nav>
-        ${canSeePage("dashboard")?`<a href="#/dashboard" class="${r.view==="dashboard"?"on":""}">Dashboard</a>`:""}
-        ${canSeePage("tasks")?`<a href="#/tasks" class="${r.view==="tasks"?"on":""}">All Tasks</a>`:""}
-        ${canSeePage("command")?`<a href="#/command" class="${r.view==="command"?"on":""}">Command</a>`:""}
-        ${canSeePage("products")?`<a href="#/products" class="${r.view==="products"?"on":""}">Products</a>`:""}
-        ${canSeePage("clients")?`<a href="#/clients" class="${r.view==="clients"?"on":""}">Clients</a>`:""}
-        ${canSeePage("internal")?`<a href="#/internal" class="${r.view==="internal"?"on":""}">Internal Works</a>`:""}
-        ${canSeePage("team")?`<a href="#/team" class="${r.view==="team"?"on":""}">Team</a>`:""}
-        ${ME.role==="ADMIN"?`<a href="#/access" class="${r.view==="access"?"on":""}">Access Control</a>`:""}
-      </nav>
+      <nav>${[
+        {label:"Work",links:[
+          canSeePage("dashboard")&&{view:"dashboard",href:"#/dashboard",text:"Dashboard"},
+          canSeePage("tasks")&&{view:"tasks",href:"#/tasks",text:"All Tasks"},
+          canSeePage("command")&&{view:"command",href:"#/command",text:"Command"},
+        ]},
+        {label:"Services",links:[
+          canSeePage("products")&&{view:"products",href:"#/products",text:"Products"},
+          canSeePage("clients")&&{view:"clients",href:"#/clients",text:"Clients"},
+          canSeePage("internal")&&{view:"internal",href:"#/internal",text:"Internal Works"},
+          canSeePage("customers")&&{view:"customers",href:"#/customers",text:"Customers"},
+        ]},
+        {label:"Admin",links:[
+          canSeePage("team")&&{view:"team",href:"#/team",text:"Team"},
+          ME.role==="ADMIN"&&{view:"access",href:"#/access",text:"Access Control"},
+        ]},
+      ].map(g=>{
+        const links=g.links.filter(Boolean);
+        if(!links.length)return"";
+        return `<div class="nav-group"><div class="nav-label">${g.label}</div>
+          ${links.map(l=>`<a href="${l.href}" class="${r.view===l.view?"on":""}">${l.text}</a>`).join("")}</div>`;
+      }).join("")}</nav>
       <div class="who"><div class="nm">${esc(ME.displayName)}</div><div class="rl">${esc(ME.role)}</div>
         <button data-act="logout">Log out</button></div>
     </aside>
@@ -388,6 +447,7 @@ function render(){
       <div class="topbar"><button class="bare menu-btn" data-act="menu" aria-label="Menu">☰</button><h1>${esc(titles[r.view])}</h1>
         <span class="sub">${r.view==="board"?esc(PROJECTS.find(p=>p.id===r.projectId)?.key||""):""}</span>
         <span class="sp"></span>
+        <div class="tb-actions" id="tbActions"></div>
         <div class="bellwrap"><button class="bare" data-act="bell">▤ Inbox${badgeHtml(unread)}</button>
           <div class="ndrop" id="ndrop">${NOTIFS.length?NOTIFS.map(n=>`
             <div class="nitem ${n.read?"":"unread"}" data-act="notif" data-story="${n.storyId||""}">${esc(n.text)}
@@ -407,6 +467,7 @@ function render(){
   else if(r.view==="products") renderProducts();
   else if(r.view==="clients") renderProjects();
   else if(r.view==="internal") renderInternal();
+  else if(r.view==="customers") renderCustomers();
   else if(r.view==="team") renderTeam();
   else if(r.view==="access"){if(ME.role!=="ADMIN"){location.hash="#/dashboard";return;}renderAccess();}
   else renderBoard(r.projectId);
@@ -443,6 +504,8 @@ document.addEventListener("click",async(e)=>{
   }
   else if(act==="open-project") location.hash="#/board/"+el.dataset.id;
   else if(act==="new-project") projectModal(el.dataset.cat||"client");
+  else if(act==="new-customer") customerModal(null);
+  else if(act==="open-task-filter") taskFilterDrawer();
   else if(act==="project-settings") projectSettingsModal(PROJECTS.find(p=>p.id===Number(el.dataset.id)));
   else if(act==="new-user") userModal();
   else if(act==="new-story") storyDrawer(null,Number(el.dataset.project));
@@ -510,7 +573,7 @@ async function renderDashboard(){
     [STORIES.filter(s=>s.assignedTo?.id===ME.id&&s.storyStatus==="Done").length,"Done total","all time"],
   ])}</div>
   <div class="block"><div class="bhead"><h2>My queue</h2><div class="note">everything assigned to me, urgent first</div></div>
-    ${mine.length?`<table class="cardify"><thead><tr><th>Item</th><th>Project</th><th>Type</th><th>Status</th><th>Priority</th><th>Due</th></tr></thead><tbody>
+    ${mine.length?`<table class="tbl-compact"><thead><tr><th>Item</th><th>Project</th><th>Type</th><th>Status</th><th>Priority</th><th>Due</th></tr></thead><tbody>
     ${mine.sort((a,b)=>String(a.dueDate||"9999").localeCompare(String(b.dueDate||"9999")))
       .map(s=>`<tr data-act="open-story" data-id="${s.id}" style="cursor:pointer">
       <td><span class="mono" style="font-size:11px">${esc(s.number)}</span> ${esc(s.name)}</td>
@@ -524,55 +587,83 @@ async function renderDashboard(){
 }
 
 // ---------- all tasks (filter by client / project / dev-devlead) ----------
-let TASK_FILTER={client:"",project:"",assignee:"",status:"",type:"",q:""};
+let TASK_FILTER={customer:"",project:"",assignee:"",status:"",type:"",q:""};
+let TASK_PAGE=1;
+const TASK_PAGE_SIZE=25;
+const taskFilterCount=()=>Object.values(TASK_FILTER).filter(Boolean).length;
+function taskFilterDrawer(){
+  const customersInUse=CUSTOMERS.filter(c=>PROJECTS.some(p=>p.customerId===c.id));
+  const d=$("#drawer");
+  d.innerHTML=`
+  <div class="dhead"><span class="num">Filter tasks</span><button class="bare" data-act="close" style="background:var(--paper);box-shadow:none">✕</button></div>
+  <div class="dbody">
+    <div class="dsec"><div class="dsec-b" style="padding-top:14px">
+      <label>Customer</label><select id="tfClient"><option value="">All customers</option>
+        ${customersInUse.map(c=>`<option value="${c.id}" ${String(TASK_FILTER.customer)===String(c.id)?"selected":""}>${esc(c.customerNumber)} — ${esc(c.name)}</option>`).join("")}</select>
+      <label>Project</label><select id="tfProject"><option value="">All projects</option>
+        ${PROJECTS.map(p=>`<option value="${p.id}" ${String(TASK_FILTER.project)===String(p.id)?"selected":""}>${esc(p.key)} — ${esc(p.name)}</option>`).join("")}</select>
+      <label>Assignee</label><select id="tfAssignee"><option value="">Everyone</option>
+        ${USERS.map(u=>`<option value="${u.id}" ${String(TASK_FILTER.assignee)===String(u.id)?"selected":""}>${esc(u.displayName)}</option>`).join("")}</select>
+      <label>Status</label><select id="tfStatus"><option value="">Any status</option>
+        ${STATUSES.map(s=>`<option ${TASK_FILTER.status===s?"selected":""}>${s}</option>`).join("")}</select>
+      <label>Type</label><select id="tfType"><option value="">Any type</option>
+        ${["Story","Issue","Bug"].map(t=>`<option ${TASK_FILTER.type===t?"selected":""}>${t}</option>`).join("")}</select>
+      <label>Search</label><input type="search" id="tfQ" placeholder="Title, number, module…" value="${esc(TASK_FILTER.q)}">
+    </div></div>
+  </div>
+  <div class="dfoot"><button class="bare" id="tfClear">Clear all</button><button class="primary" id="tfApply">Apply</button></div>`;
+  d.classList.add("open");$("#overlay").classList.add("open");
+  const readForm=()=>({customer:$("#tfClient").value,project:$("#tfProject").value,assignee:$("#tfAssignee").value,status:$("#tfStatus").value,type:$("#tfType").value,q:$("#tfQ").value});
+  $("#tfApply").onclick=()=>{TASK_FILTER=readForm();TASK_PAGE=1;closePanels();paintTasks();updateTaskFilterBtn();};
+  $("#tfClear").onclick=()=>{TASK_FILTER={customer:"",project:"",assignee:"",status:"",type:"",q:""};TASK_PAGE=1;closePanels();paintTasks();updateTaskFilterBtn();};
+}
+function updateTaskFilterBtn(){
+  const n=taskFilterCount();
+  const b=$("#tfOpenBtn"); if(b)b.textContent=n?`Filter (${n})`:"Filter";
+}
+let paintTasks=()=>{};
 async function renderTasks(){
   STORIES=await api("/api/pm-stories"); // server-side scoped to my visibility
-  const clientNames=[...new Set(PROJECTS.filter(p=>p.category==="client"&&p.clientName).map(p=>p.clientName))].sort();
-  $("#main").innerHTML=`
-  <div class="board-head">
-    <select id="tfClient" style="width:auto"><option value="">All clients</option>
-      ${clientNames.map(c=>`<option value="${esc(c)}" ${TASK_FILTER.client===c?"selected":""}>${esc(c)}</option>`).join("")}</select>
-    <select id="tfProject" style="width:auto"><option value="">All projects</option>
-      ${PROJECTS.map(p=>`<option value="${p.id}" ${String(TASK_FILTER.project)===String(p.id)?"selected":""}>${esc(p.key)} — ${esc(p.name)}</option>`).join("")}</select>
-    <select id="tfAssignee" style="width:auto"><option value="">Everyone</option>
-      ${USERS.map(u=>`<option value="${u.id}" ${String(TASK_FILTER.assignee)===String(u.id)?"selected":""}>${esc(u.displayName)}</option>`).join("")}</select>
-    <select id="tfStatus" style="width:auto"><option value="">Any status</option>
-      ${STATUSES.map(s=>`<option ${TASK_FILTER.status===s?"selected":""}>${s}</option>`).join("")}</select>
-    <select id="tfType" style="width:auto"><option value="">Any type</option>
-      ${["Story","Issue","Bug"].map(t=>`<option ${TASK_FILTER.type===t?"selected":""}>${t}</option>`).join("")}</select>
-    <input type="search" id="tfQ" placeholder="SEARCH…" value="${esc(TASK_FILTER.q)}">
-  </div>
-  <div class="block"><div class="bhead"><h2>Tasks</h2><div class="note" id="tfCount"></div></div>
-    <div id="tfBody"></div></div>`;
-  const paint=()=>{
+  $("#tbActions").innerHTML=`<input type="search" id="tfQuickQ" placeholder="Search tasks…" value="${esc(TASK_FILTER.q)}">
+    <button id="tfOpenBtn" data-act="open-task-filter">${taskFilterCount()?`Filter (${taskFilterCount()})`:"Filter"}</button>`;
+  $("#tfQuickQ").oninput=(e)=>{TASK_FILTER.q=e.target.value;TASK_PAGE=1;paintTasks();};
+  $("#main").innerHTML=`<div class="block"><div class="bhead"><h2>Tasks</h2><div class="note" id="tfCount"></div></div>
+    <div id="tfBody"></div>
+    <div id="tfPager" style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-top:var(--bd)"></div></div>`;
+  paintTasks=()=>{
     const vis=STORIES.filter(s=>
-      (!TASK_FILTER.client||s.project?.clientName===TASK_FILTER.client)&&
+      (!TASK_FILTER.customer||String(s.project?.customerId)===String(TASK_FILTER.customer))&&
       (!TASK_FILTER.project||String(s.project?.id)===String(TASK_FILTER.project))&&
       (!TASK_FILTER.assignee||String(s.assignedTo?.id)===String(TASK_FILTER.assignee))&&
       (!TASK_FILTER.status||s.storyStatus===TASK_FILTER.status)&&
       (!TASK_FILTER.type||s.type===TASK_FILTER.type)&&
-      (!TASK_FILTER.q||(s.name+" "+s.number+" "+(s.module||"")).toLowerCase().includes(TASK_FILTER.q.toLowerCase())));
+      (!TASK_FILTER.q||(s.name+" "+s.number+" "+(s.module||"")).toLowerCase().includes(TASK_FILTER.q.toLowerCase())))
+      .sort((a,b)=>String(a.dueDate||"9999").localeCompare(String(b.dueDate||"9999")));
     $("#tfCount").textContent=`${vis.length} item${vis.length===1?"":"s"}`;
-    $("#tfBody").innerHTML=vis.length?`<table class="cardify"><thead><tr><th>Item</th><th>Project</th><th>Client</th><th>Assignee</th><th>Type</th><th>Status</th><th>Priority</th><th>Due</th></tr></thead><tbody>
-      ${vis.sort((a,b)=>String(a.dueDate||"9999").localeCompare(String(b.dueDate||"9999")))
-        .map(s=>`<tr data-act="open-story" data-id="${s.id}" style="cursor:pointer">
+    const pages=Math.max(1,Math.ceil(vis.length/TASK_PAGE_SIZE));
+    if(TASK_PAGE>pages)TASK_PAGE=pages;
+    const page=vis.slice((TASK_PAGE-1)*TASK_PAGE_SIZE,TASK_PAGE*TASK_PAGE_SIZE);
+    $("#tfBody").innerHTML=page.length?`<div style="overflow-x:auto"><table class="tbl-compact"><thead><tr><th>Item</th><th>Project</th><th>Customer</th><th>Assignee</th><th>Type</th><th>Status</th><th>Priority</th><th>Due</th></tr></thead><tbody>
+      ${page.map(s=>`<tr data-act="open-story" data-id="${s.id}" style="cursor:pointer">
         <td><span class="mono" style="font-size:11px">${esc(s.number)}</span> ${esc(s.name)}</td>
-        <td class="mono" data-l="Project">${esc(s.project?.key||"")}</td>
-        <td data-l="Client">${esc(s.project?.clientName||"—")}</td>
-        <td data-l="Assignee">${esc(s.assignedTo?.displayName||"—")}</td>
-        <td data-l="Type"><span class="stamp ${stampCls(s.type)}">${esc(s.type)}</span></td>
-        <td data-l="Status"><span class="stamp ${stampCls(s.storyStatus)}">${stampLabel(s.storyStatus)}</span></td>
-        <td data-l="Priority"><span class="stamp ${stampCls(s.priority)}">${esc(s.priority)}</span></td>
-        <td data-l="Due">${s.dueDate?(isPast(s.dueDate)&&s.storyStatus!=="Done"?`<span class="late">${fmtD(s.dueDate)} ⚑</span>`:fmtD(s.dueDate)):"—"}</td></tr>`).join("")}</tbody></table>`
+        <td class="mono">${esc(s.project?.key||"")}</td>
+        <td>${s.project?.customer?esc(s.project.customer.name)+` <span class="mono" style="font-size:10px;color:var(--dim)">${esc(s.project.customer.customerNumber)}</span>`:"—"}</td>
+        <td>${esc(s.assignedTo?.displayName||"—")}</td>
+        <td><span class="stamp ${stampCls(s.type)}">${esc(s.type)}</span></td>
+        <td><span class="stamp ${stampCls(s.storyStatus)}">${stampLabel(s.storyStatus)}</span></td>
+        <td><span class="stamp ${stampCls(s.priority)}">${esc(s.priority)}</span></td>
+        <td>${s.dueDate?(isPast(s.dueDate)&&s.storyStatus!=="Done"?`<span class="late">${fmtD(s.dueDate)} ⚑</span>`:fmtD(s.dueDate)):"—"}</td></tr>`).join("")}</tbody></table></div>`
       :'<div class="empty">No tasks match these filters</div>';
+    $("#tfPager").innerHTML=vis.length?`
+      <span style="font-family:var(--sans);font-size:12px;color:var(--dim)">Page ${TASK_PAGE} of ${pages}</span>
+      <div style="display:flex;gap:8px">
+        <button class="bare" id="tfPrev" ${TASK_PAGE<=1?"disabled":""}>‹ Prev</button>
+        <button class="bare" id="tfNext" ${TASK_PAGE>=pages?"disabled":""}>Next ›</button>
+      </div>`:"";
+    $("#tfPrev")?.addEventListener("click",()=>{TASK_PAGE--;paintTasks();});
+    $("#tfNext")?.addEventListener("click",()=>{TASK_PAGE++;paintTasks();});
   };
-  $("#tfClient").onchange=(e)=>{TASK_FILTER.client=e.target.value;paint();};
-  $("#tfProject").onchange=(e)=>{TASK_FILTER.project=e.target.value;paint();};
-  $("#tfAssignee").onchange=(e)=>{TASK_FILTER.assignee=e.target.value;paint();};
-  $("#tfStatus").onchange=(e)=>{TASK_FILTER.status=e.target.value;paint();};
-  $("#tfType").onchange=(e)=>{TASK_FILTER.type=e.target.value;paint();};
-  $("#tfQ").oninput=(e)=>{TASK_FILTER.q=e.target.value;paint();};
-  paint();
+  paintTasks();
 }
 
 // ---------- command (admin/devlead: performance & allocation) ----------
@@ -580,6 +671,7 @@ async function renderCommand(){
   if(!isLead()){location.hash="#/dashboard";return;}
   [STORIES,ANALYTICS]=await Promise.all([api("/api/pm-stories"),api("/api/analytics")]);
   const open=STORIES.filter(s=>s.storyStatus!=="Done");
+  $("#tbActions").innerHTML=`<button class="primary" data-act="new-project" data-cat="client">+ New service</button>`;
   let html="";
   {
     const overdue=open.filter(s=>isPast(s.dueDate));
@@ -593,7 +685,7 @@ async function renderCommand(){
     ])}</div>
     <div class="grid2">
       <div class="block"><div class="bhead"><h2>Team load</h2><div class="note">open items per person</div></div>
-        <table class="cardify"><thead><tr><th>Person</th><th>Open</th><th>Pts</th><th>Overdue</th><th>Doing now</th></tr></thead><tbody>
+        <table class="tbl-compact"><thead><tr><th>Person</th><th>Open</th><th>Pts</th><th>Overdue</th><th>Doing now</th></tr></thead><tbody>
         ${devs.map(u=>{const m=open.filter(s=>s.assignedTo?.id===u.id);
           const od=m.filter(s=>isPast(s.dueDate)).length;
           const doing=m.find(s=>s.storyStatus==="In Progress");
@@ -603,7 +695,7 @@ async function renderCommand(){
           <td data-l="Doing now">${doing?`<span class="mono" style="font-size:11px">${esc(doing.number)}</span> ${esc(doing.name).slice(0,28)}`:"<span style='color:var(--dim)'>idle</span>"}</td></tr>`;}).join("")}
         </tbody></table>${devs.length?"":'<div class="empty">nobody has open work</div>'}</div>
       <div class="block"><div class="bhead"><h2>Project health</h2><div class="note">items by status</div></div>
-        <table class="cardify"><thead><tr><th>Project</th><th>Back</th><th>Prog</th><th>Rev</th><th>Done</th><th>Overdue</th></tr></thead><tbody>
+        <table class="tbl-compact"><thead><tr><th>Project</th><th>Back</th><th>Prog</th><th>Rev</th><th>Done</th><th>Overdue</th></tr></thead><tbody>
         ${PROJECTS.map(p=>{const ps=STORIES.filter(s=>s.project?.id===p.id);
           const c=(st)=>ps.filter(s=>s.storyStatus===st).length;
           const od=ps.filter(s=>s.storyStatus!=="Done"&&isPast(s.dueDate)).length;
@@ -618,7 +710,7 @@ async function renderCommand(){
     const devsRanked=ANALYTICS?.devs||[];
     html+=`<div class="grid2">
       <div class="block"><div class="bhead"><h2>Effort scoreboard</h2><div class="note">points earned − delay/rework penalties</div></div>
-        ${devsRanked.length?`<table class="cardify"><thead><tr><th>Dev</th><th>Score</th><th>Done</th><th>On time</th><th>Late</th><th>Rework</th><th>Penalty</th></tr></thead><tbody>
+        ${devsRanked.length?`<table class="tbl-compact"><thead><tr><th>Dev</th><th>Score</th><th>Done</th><th>On time</th><th>Late</th><th>Rework</th><th>Penalty</th></tr></thead><tbody>
         ${devsRanked.map((d,i)=>`<tr><td><b>${i===0?"🏆 ":""}${esc(d.displayName)}</b></td>
           <td data-l="Score"><span class="stamp ${d.score<0?"High":"Done"}" style="font-size:12px">${d.score}</span></td>
           <td class="mono" data-l="Done">${d.done}</td><td class="mono" data-l="On time">${d.onTime}</td>
@@ -627,7 +719,7 @@ async function renderCommand(){
           <td data-l="Penalty">${d.penalties?`<span class="late">−${d.penalties}</span>`:"—"}</td></tr>`).join("")}</tbody></table>`
         :'<div class="empty">No scored work yet</div>'}</div>
       <div class="block"><div class="bhead"><h2>⚠ Critical items</h2><div class="note">churning or badly delayed</div></div>
-        ${crit.length?`<table class="cardify"><thead><tr><th>Item</th><th>Owner</th><th>Why</th></tr></thead><tbody>
+        ${crit.length?`<table class="tbl-compact"><thead><tr><th>Item</th><th>Owner</th><th>Why</th></tr></thead><tbody>
         ${crit.slice(0,12).map(a=>{const u=USERS.find(x=>x.id===a.assignedToId);
           return `<tr data-act="open-story" data-id="${a.id}" style="cursor:pointer">
           <td><span class="mono" style="font-size:11px">${esc(a.number)}</span> ${esc(a.name).slice(0,32)}</td>
@@ -695,14 +787,11 @@ async function renderProducts(){
       :'<div class="empty">No products match your search — create SCM, HRMS, POS… or flip an existing project to Product in its ⚙ Settings.</div>';
   };
 
+  $("#tbActions").innerHTML=`<input type="search" id="prodQ" placeholder="Search products…" value="${esc(PROD_Q)}">`;
   $("#main").innerHTML=`
   <div class="prod-hero">
     <h2>Trivyah <b>Product Lab</b></h2>
     <div class="ph-sub">Yearly build plan for our own products — SCM, HRMS, POS and friends. Track ${year} targets, watch progress, and act on the suggestions.</div>
-  </div>
-  <div class="board-head" style="justify-content:flex-end">
-    <input type="search" id="prodQ" placeholder="SEARCH PRODUCTS…" value="${esc(PROD_Q)}" style="max-width:260px">
-    <button class="primary" data-act="new-project" data-cat="product">+ New product</button>
   </div>
   <div id="prodBody"></div>`;
   $("#prodQ").oninput=(e)=>{PROD_Q=e.target.value;paint();};
@@ -731,25 +820,21 @@ function renderProjects(){
   const paint=()=>{
     const q=CLIENT_Q.toLowerCase();
     const list=PROJECTS.filter(p=>(p.category==="client"||!p.category)&&
-      (!q||(p.name+" "+p.key+" "+(p.clientName||"")+" "+(p.clientContactName||"")).toLowerCase().includes(q)));
-    const groups=new Map();
+      (!q||(p.name+" "+p.key+" "+(p.customer?.name||"")+" "+(p.customer?.contactName||"")+" "+(p.customer?.customerNumber||"")).toLowerCase().includes(q)));
+    const groups=new Map(); // keyed by customerId (unique) — never by name, since names can collide
     for(const p of list){
-      const k=p.clientName?.trim()||"Unassigned client";
-      if(!groups.has(k))groups.set(k,[]);
-      groups.get(k).push(p);
+      const k=p.customerId||"none";
+      if(!groups.has(k))groups.set(k,{label:p.customer?`${p.customer.name} — ${p.customer.customerNumber}`:"Unassigned customer",items:[]});
+      groups.get(k).items.push(p);
     }
-    const sortedKeys=[...groups.keys()].sort((a,b)=>a==="Unassigned client"?1:b==="Unassigned client"?-1:a.localeCompare(b));
+    const sortedKeys=[...groups.keys()].sort((a,b)=>a==="none"?1:b==="none"?-1:groups.get(a).label.localeCompare(groups.get(b).label));
     $("#clientBody").innerHTML=list.length?sortedKeys.map(k=>`
-      <div style="font-family:var(--sans);font-size:12px;font-weight:700;color:var(--dim);margin:20px 0 10px">${esc(k)}</div>
-      <div class="pgrid">${groups.get(k).map(pcardHtml).join("")}</div>`).join("")
+      <div style="font-family:var(--sans);font-size:12px;font-weight:700;color:var(--dim);margin:20px 0 10px">${esc(groups.get(k).label)}</div>
+      <div class="pgrid">${groups.get(k).items.map(pcardHtml).join("")}</div>`).join("")
       :'<div class="empty">No projects match your search</div>';
   };
-  $("#main").innerHTML=`
-  <div class="board-head" style="justify-content:flex-end">
-    <input type="search" id="clientQ" placeholder="SEARCH CLIENTS…" value="${esc(CLIENT_Q)}" style="max-width:260px">
-    <button class="primary" data-act="new-project" data-cat="client">+ New client project</button>
-  </div>
-  <div id="clientBody"></div>`;
+  $("#tbActions").innerHTML=`<input type="search" id="clientQ" placeholder="Search clients…" value="${esc(CLIENT_Q)}">`;
+  $("#main").innerHTML=`<div id="clientBody"></div>`;
   $("#clientQ").oninput=(e)=>{CLIENT_Q=e.target.value;paint();};
   paint();
 }
@@ -762,36 +847,123 @@ function renderInternal(){
     const list=PROJECTS.filter(p=>p.category==="internal"&&(!q||(p.name+" "+p.key).toLowerCase().includes(q)));
     $("#internalBody").innerHTML=`<div class="pgrid">${list.map(pcardHtml).join("")||'<div class="empty">No internal projects match — hiring, ops, internal tooling, admin work…</div>'}</div>`;
   };
-  $("#main").innerHTML=`
-  <div class="board-head" style="justify-content:flex-end">
-    <input type="search" id="internalQ" placeholder="SEARCH INTERNAL WORKS…" value="${esc(INTERNAL_Q)}" style="max-width:260px">
-    <button class="primary" data-act="new-project" data-cat="internal">+ New internal project</button>
-  </div>
-  <div id="internalBody"></div>`;
+  $("#tbActions").innerHTML=`<input type="search" id="internalQ" placeholder="Search internal works…" value="${esc(INTERNAL_Q)}">`;
+  $("#main").innerHTML=`<div id="internalBody"></div>`;
   $("#internalQ").oninput=(e)=>{INTERNAL_Q=e.target.value;paint();};
   paint();
 }
-const CAT_LABEL={client:"client project",product:"product",internal:"internal project"};
-function projectModal(cat="client"){
+
+// ---------- customers ----------
+let CUSTOMER_Q="";
+async function renderCustomers(){
+  CUSTOMERS=await api("/api/customers");
+  const paint=()=>{
+    const q=CUSTOMER_Q.toLowerCase();
+    const list=CUSTOMERS.filter(c=>!q||(c.customerNumber+" "+c.name+" "+(c.contactName||"")).toLowerCase().includes(q));
+    $("#custBody").innerHTML=`<div class="block"><div class="bhead"><h2>Customers</h2><div class="note">${CUSTOMERS.length} total</div></div>
+    ${list.length?`<div style="overflow-x:auto"><table class="tbl-compact"><thead><tr><th>Number</th><th>Name</th><th>Contact</th><th>Phone</th><th>Email</th><th>Projects</th><th></th></tr></thead><tbody>
+    ${list.map(c=>`<tr>
+      <td class="mono">${esc(c.customerNumber)}</td>
+      <td><b>${esc(c.name)}</b></td>
+      <td>${esc(c.contactName||"—")}</td>
+      <td class="mono">${esc(c.phone||"—")}</td>
+      <td>${esc(c.email||"—")}</td>
+      <td class="mono">${c.projectCount}</td>
+      <td style="white-space:nowrap">
+        <button class="bare" data-cedit="${c.id}">edit</button>
+        ${ME.role==="ADMIN"?`<button class="bare" style="color:var(--red)" data-cdel="${c.id}" data-name="${esc(c.name)}">delete</button>`:""}
+      </td></tr>`).join("")}</tbody></table></div>`
+    :'<div class="empty">No customers match</div>'}</div>`;
+    $$("[data-cedit]").forEach(b=>b.onclick=()=>customerModal(CUSTOMERS.find(c=>c.id===Number(b.dataset.cedit))));
+    $$("[data-cdel]").forEach(b=>b.onclick=async()=>{
+      if(!confirm(`Delete customer "${b.dataset.name}"? Only possible if no projects use it.`))return;
+      try{await api("/api/customers/"+b.dataset.cdel,{method:"DELETE"});CUSTOMERS=await api("/api/customers");paint();}
+      catch(e){alert(e.message);}});
+  };
+  $("#tbActions").innerHTML=`<input type="search" id="custQ" placeholder="Search customers…" value="${esc(CUSTOMER_Q)}">
+    ${ME.role!=="DEV"?`<button class="primary" data-act="new-customer">+ New customer</button>`:""}`;
+  $("#main").innerHTML=`<div id="custBody"></div>`;
+  $("#custQ").oninput=(e)=>{CUSTOMER_Q=e.target.value;paint();};
+  paint();
+}
+function customerModal(c){
   const m=$("#modal");
-  m.innerHTML=`<div class="mhead">New ${CAT_LABEL[cat]||"project"}</div><div class="mbody">
-    <label>Name</label><input id="pn" placeholder="${cat==="product"?"e.g. SCM, HRMS, POS":cat==="internal"?"e.g. Hiring, Office IT":"e.g. Mission NCC Store"}">
-    <label>Key</label><input id="pk" maxlength="6" placeholder="short prefix, e.g. ${cat==="product"?"SCM":cat==="internal"?"OPS":"NCC"}">
-    <label>Description</label><input id="pd">
+  const isNew=!c;
+  m.innerHTML=`<div class="mhead">${isNew?"New customer":"Edit "+esc(c.name)}</div><div class="mbody">
+    ${!isNew?`<label>Customer number</label><input value="${esc(c.customerNumber)}" disabled>`:""}
+    <label>Name <span style="color:var(--red)">*</span></label><input id="cuName" value="${esc(c?.name||"")}">
+    <div class="row2"><div><label>Contact person</label><input id="cuContact" value="${esc(c?.contactName||"")}"></div>
+    <div><label>Phone</label><input id="cuPhone" value="${esc(c?.phone||"")}"></div></div>
+    <label>Email</label><input id="cuEmail" type="email" value="${esc(c?.email||"")}">
+    <div class="formerr" id="cuerr"></div></div>
+  <div class="mfoot"><button data-act="close">Cancel</button><button class="primary" id="cusave">${isNew?"Create":"Save"}</button></div>`;
+  m.classList.add("open");$("#overlay").classList.add("open");
+  $("#cusave").onclick=async()=>{
+    if(!$("#cuName").value.trim()){$("#cuerr").textContent="Name required";return;}
+    try{
+      const body=JSON.stringify({name:$("#cuName").value,contactName:$("#cuContact").value||null,phone:$("#cuPhone").value||null,email:$("#cuEmail").value||null});
+      if(isNew) await api("/api/customers",{method:"POST",body});
+      else await api("/api/customers/"+c.id,{method:"PUT",body});
+      CUSTOMERS=await api("/api/customers");closePanels();render();
+    }catch(e){$("#cuerr").textContent=e.message;}};
+}
+
+// ---------- new service (single creation flow for product/client/internal) ----------
+const CAT_LABEL={client:"Client project",product:"Trivyah product",internal:"Internal work"};
+function customerOptions(selectedId){
+  return CUSTOMERS.map(c=>`<option value="${c.id}" ${String(selectedId)===String(c.id)?"selected":""}>${esc(c.customerNumber)} — ${esc(c.name)}</option>`).join("");
+}
+function projectModal(cat="client", vals={}, showCustomerForm=false){
+  const m=$("#modal");
+  const v=(id,fallback="")=>vals[id]??fallback;
+  m.innerHTML=`<div class="mhead">New service</div><div class="mbody">
+    <label>Type</label><select id="pc">
+      <option value="client" ${cat==="client"?"selected":""}>Client project</option>
+      <option value="product" ${cat==="product"?"selected":""}>Trivyah product</option>
+      <option value="internal" ${cat==="internal"?"selected":""}>Internal work</option></select>
+    <label>Name</label><input id="pn" value="${esc(v("pn"))}" placeholder="${cat==="product"?"e.g. SCM, HRMS, POS":cat==="internal"?"e.g. Hiring, Office IT":"e.g. Mission NCC Store"}">
+    <label>Key</label><input id="pk" maxlength="6" value="${esc(v("pk"))}" placeholder="short prefix, e.g. ${cat==="product"?"SCM":cat==="internal"?"OPS":"NCC"}">
+    <label>Description</label><input id="pd" value="${esc(v("pd"))}">
     <div class="row2" style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-      <div><label>Type</label><select id="pc">
-        <option value="client" ${cat==="client"?"selected":""}>Client project</option>
-        <option value="product" ${cat==="product"?"selected":""}>Trivyah product</option>
-        <option value="internal" ${cat==="internal"?"selected":""}>Internal work</option></select></div>
-      <div><label>Priority</label><select id="pp"><option>Medium</option><option>High</option><option>Low</option></select></div>
-      <div><label>Due date</label><input id="pdd" type="date"></div>
-      <div><label>Yearly target date</label><input id="ptd" type="date"></div></div>
-    ${cat==="client"?`<label>Client name</label><input id="pcn" placeholder="e.g. Acme Corp">`:""}
+      <div><label>Priority</label><select id="pp"><option ${v("pp","Medium")==="Medium"?"selected":""}>Medium</option><option ${v("pp")==="High"?"selected":""}>High</option><option ${v("pp")==="Low"?"selected":""}>Low</option></select></div>
+      <div><label>Due date</label><input id="pdd" type="date" value="${v("pdd")}"></div>
+      ${cat==="product"?`<div><label>Yearly target date</label><input id="ptd" type="date" value="${v("ptd")}"></div>
+      <div><label>Version</label><input id="pver" value="${esc(v("pver"))}" placeholder="e.g. v1.0.0"></div>`:""}
+    </div>
+    ${cat==="client"?`<label>Customer <span style="color:var(--red)">*</span></label>
+      ${CUSTOMERS.length?`<select id="pcust">${customerOptions(v("pcust"))}</select>`:`<div class="empty" style="padding:10px;text-align:left">No customers yet</div>`}
+      <div style="margin-top:6px"><button type="button" class="bare" id="pcustnew">${showCustomerForm?"Cancel new customer":"+ New customer"}</button></div>
+      ${showCustomerForm?`<div class="dsec" style="margin-top:10px"><div class="dsec-b" style="padding-top:12px">
+        <label>Customer name <span style="color:var(--red)">*</span></label><input id="ncName">
+        <div class="row2"><div><label>Contact person</label><input id="ncContact"></div><div><label>Phone</label><input id="ncPhone"></div></div>
+        <label>Email</label><input id="ncEmail" type="email">
+        <div class="formerr" id="ncerr"></div>
+        <div style="margin-top:10px"><button type="button" class="bare" id="ncSave">Create customer</button></div>
+      </div></div>`:""}`:""}
     <div class="formerr" id="perr"></div></div>
   <div class="mfoot"><button data-act="close">Cancel</button><button class="primary" id="psave">Create</button></div>`;
   m.classList.add("open");$("#overlay").classList.add("open");
+
+  const collect=()=>({pn:$("#pn").value,pk:$("#pk").value,pd:$("#pd").value,pp:$("#pp").value,pdd:$("#pdd").value,
+    ptd:$("#ptd")?.value||"",pver:$("#pver")?.value||"",pcust:$("#pcust")?.value||""});
+  $("#pc").onchange=()=>projectModal($("#pc").value, collect(), false);
+  if(cat==="client") $("#pcustnew").onclick=()=>projectModal(cat, collect(), !showCustomerForm);
+  if(showCustomerForm) $("#ncSave").onclick=async()=>{
+    if(!$("#ncName").value.trim()){$("#ncerr").textContent="Name required";return;}
+    try{
+      const c=await api("/api/customers",{method:"POST",body:JSON.stringify({name:$("#ncName").value,contactName:$("#ncContact").value||null,phone:$("#ncPhone").value||null,email:$("#ncEmail").value||null})});
+      CUSTOMERS=await api("/api/customers");
+      const vals2=collect(); vals2.pcust=c.id;
+      projectModal(cat, vals2, false);
+    }catch(e){$("#ncerr").textContent=e.message;}};
+
   $("#psave").onclick=async()=>{try{
-    await api("/api/pm-projects",{method:"POST",body:JSON.stringify({name:$("#pn").value,key:$("#pk").value,description:$("#pd").value,priority:$("#pp").value,dueDate:$("#pdd").value||null,category:$("#pc").value,targetDate:$("#ptd").value||null,clientName:$("#pcn")?.value||null})});
+    const type=$("#pc").value;
+    if(type==="client"&&!$("#pcust")?.value){$("#perr").textContent="Attach a customer first";return;}
+    await api("/api/pm-projects",{method:"POST",body:JSON.stringify({
+      name:$("#pn").value,key:$("#pk").value,description:$("#pd").value,priority:$("#pp").value,
+      dueDate:$("#pdd").value||null,category:type,targetDate:$("#ptd")?.value||null,
+      version:$("#pver")?.value||null,customerId:$("#pcust")?.value||null})});
     PROJECTS=await api("/api/pm-projects");closePanels();render();
   }catch(e){$("#perr").textContent=e.message;}};
 }
@@ -800,52 +972,61 @@ function projectSettingsModal(p){
   if(!p)return;
   const members=new Set(String(p.assignees||"").split(",").map(Number).filter(Boolean));
   const m=$("#modal");
-  m.innerHTML=`<div class="mhead">${esc(p.key)} — Project settings</div><div class="mbody">
-    <label>Name</label><input id="psn" value="${esc(p.name)}">
-    <label>Description</label><input id="psd" value="${esc(p.description||"")}">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-      <div><label>Type</label><select id="psc">
-        <option value="client" ${(p.category||"client")==="client"?"selected":""}>Client project</option>
-        <option value="product" ${p.category==="product"?"selected":""}>Trivyah product</option>
-        <option value="internal" ${p.category==="internal"?"selected":""}>Internal work</option></select></div>
-      <div><label>Priority</label><select id="psp">${["Low","Medium","High"].map(x=>`<option ${p.priority===x?"selected":""}>${x}</option>`).join("")}</select></div>
-      <div><label>Status</label><select id="pss">${["Active","On Hold","Completed"].map(x=>`<option ${p.projectStatus===x?"selected":""}>${x}</option>`).join("")}</select></div>
-      <div><label>Due date</label><input id="psdd" type="date" value="${p.dueDate||""}"></div>
-      <div><label>Yearly target</label><input id="pstd" type="date" value="${p.targetDate||""}"></div>
-      <div><label>Owner</label><select id="pso">${USERS.map(u=>`<option value="${u.id}" ${p.assignedTo?.id===u.id?"selected":""}>${esc(u.displayName)}</option>`).join("")}</select></div>
-      <div><label>Version (products)</label><input id="psver" value="${esc(p.version||"")}" placeholder="e.g. v2.3.0"></div>
-    </div>
-    <label>Members — control who can see this project</label>
-    <div style="border:var(--bd);background:var(--white);max-height:220px;overflow-y:auto;padding:8px 12px">
-      ${USERS.map(u=>`<label style="display:flex;gap:10px;align-items:center;margin:0;padding:6px 0;text-transform:none;letter-spacing:0;font-size:13px;font-family:var(--sans);font-weight:500;cursor:pointer">
-        <input type="checkbox" data-member="${u.id}" ${members.has(u.id)?"checked":""} style="width:auto">
-        ${esc(u.displayName)} <span class="mono" style="font-size:10px;color:var(--dim)">${esc(u.role)}</span></label>`).join("")}
-    </div>
-    <div style="font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:6px">Only admins see every project — everyone else (including dev leads) only sees projects they're on.</div>
-
-    <div class="dsec" style="margin:18px 0 0">
-      <div class="dsec-h"><span><i class="sq"></i>Client info</span></div>
-      <div class="dsec-b">
-        <label>Client name</label><input id="pscn" value="${esc(p.clientName||"")}" placeholder="e.g. Acme Corp">
-        <div class="row2">
-          <div><label>Contact person</label><input id="pscc" value="${esc(p.clientContactName||"")}"></div>
-          <div><label>Phone</label><input id="pscp" value="${esc(p.clientPhone||"")}"></div>
-        </div>
-        <label>Email</label><input id="psce" type="email" value="${esc(p.clientEmail||"")}">
+  const tabs=["details","customer","access","files","notifications"];
+  const tabLabel={details:"Details",customer:"Customer",access:"Access",files:"Files",notifications:"Notifications"};
+  m.innerHTML=`<div class="mhead">${esc(p.key)} — Project settings</div>
+  <div class="dtabs">${tabs.map((t,i)=>`<button class="dtab ${i===0?"on":""}" data-stab="${t}">${tabLabel[t]}</button>`).join("")}</div>
+  <div class="mbody">
+    <div class="spane" data-pane="details">
+      <label>Name</label><input id="psn" value="${esc(p.name)}">
+      <label>Description</label><input id="psd" value="${esc(p.description||"")}">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div><label>Type</label><select id="psc">
+          <option value="client" ${(p.category||"client")==="client"?"selected":""}>Client project</option>
+          <option value="product" ${p.category==="product"?"selected":""}>Trivyah product</option>
+          <option value="internal" ${p.category==="internal"?"selected":""}>Internal work</option></select></div>
+        <div><label>Priority</label><select id="psp">${["Low","Medium","High"].map(x=>`<option ${p.priority===x?"selected":""}>${x}</option>`).join("")}</select></div>
+        <div><label>Status</label><select id="pss">${["Active","On Hold","Completed"].map(x=>`<option ${p.projectStatus===x?"selected":""}>${x}</option>`).join("")}</select></div>
+        <div><label>Due date</label><input id="psdd" type="date" value="${p.dueDate||""}"></div>
+        <div><label>Yearly target</label><input id="pstd" type="date" value="${p.targetDate||""}"></div>
+        <div><label>Owner</label><select id="pso">${USERS.map(u=>`<option value="${u.id}" ${p.assignedTo?.id===u.id?"selected":""}>${esc(u.displayName)}</option>`).join("")}</select></div>
+        <div><label>Version (products)</label><input id="psver" value="${esc(p.version||"")}" placeholder="e.g. v2.3.0"></div>
       </div>
     </div>
-
-    <div class="dsec">
-      <div class="dsec-h"><span><i class="sq" style="--sc:var(--red)"></i>Documents, images &amp; videos</span><span class="n" id="pfcount"></span></div>
-      <div class="dsec-b"><div id="pflist" style="margin-top:10px"><div class="empty">loading…</div></div>
-        <div style="display:flex;gap:10px;margin-top:10px;align-items:center">
-          <input type="file" id="pfpick" style="border:none;padding:0;background:none">
-          <button class="bare" id="pfup">Upload</button></div></div>
+    <div class="spane" data-pane="customer" hidden>
+      <label>Customer <span style="color:var(--red)">*</span> — required for client projects</label>
+      ${CUSTOMERS.length?`<select id="pscust">${customerOptions(p.customerId)}</select>`:`<div class="empty" style="padding:10px;text-align:left">No customers yet — create one on the Customers page</div>`}
+      ${p.customer?`<div style="font-size:12.5px;color:var(--dim);margin-top:10px">${esc(p.customer.contactName||"—")} · ${esc(p.customer.phone||"—")} · ${esc(p.customer.email||"—")}</div>`:""}
     </div>
-
+    <div class="spane" data-pane="access" hidden>
+      <label>Members — control who can see this project</label>
+      <div style="border:var(--bd);background:var(--white);max-height:260px;overflow-y:auto;padding:8px 12px;border-radius:10px">
+        ${USERS.map(u=>`<label style="display:flex;gap:10px;align-items:center;margin:0;padding:6px 0;text-transform:none;letter-spacing:0;font-size:13px;font-family:var(--sans);font-weight:500;cursor:pointer">
+          <input type="checkbox" data-member="${u.id}" ${members.has(u.id)?"checked":""} style="width:auto">
+          ${esc(u.displayName)} <span class="mono" style="font-size:10px;color:var(--dim)">${esc(u.role)}</span></label>`).join("")}
+      </div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:6px">Only admins see every project — everyone else (including dev leads) only sees projects they're on.</div>
+    </div>
+    <div class="spane" data-pane="files" hidden>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b style="font-size:13px">Documents, images &amp; videos</b><span class="n" id="pfcount"></span></div>
+      <div id="pflist"><div class="empty">loading…</div></div>
+      <div style="display:flex;gap:10px;margin-top:10px;align-items:center">
+        <input type="file" id="pfpick" style="border:none;padding:0;background:none">
+        <button class="bare" id="pfup">Upload</button></div>
+    </div>
+    <div class="spane" data-pane="notifications" hidden>
+      <div style="font-size:12.5px;color:var(--dim);margin-bottom:10px">Turn in-app and email notifications on or off per event, for this service only.</div>
+      <table><thead><tr><th>Event</th><th style="text-align:center">In-app</th><th style="text-align:center">Email</th></tr></thead><tbody id="pnBody">
+        <tr><td colspan="3" class="empty">loading…</td></tr>
+      </tbody></table>
+    </div>
     <div class="formerr" id="pserr"></div></div>
   <div class="mfoot"><button data-act="close">Cancel</button><button class="primary" id="pssave">Save</button></div>`;
   m.classList.add("open");$("#overlay").classList.add("open");
+  $$(".dtab",m).forEach(b=>b.onclick=()=>{
+    $$(".dtab",m).forEach(x=>x.classList.toggle("on",x===b));
+    $$(".spane",m).forEach(pane=>pane.hidden=pane.dataset.pane!==b.dataset.stab);
+  });
   const loadPFiles=()=>api("/api/project-files?projectId="+p.id).then(fs=>{
     $("#pfcount").textContent=fs.length?`× ${fs.length}`:"";
     $("#pflist").innerHTML=fs.length?fs.map(f=>`<div class="file-row">
@@ -854,6 +1035,18 @@ function projectSettingsModal(p){
       :'<div class="empty">No files</div>';
     $$("[data-pfdel]",m).forEach(b=>b.onclick=async()=>{try{await api("/api/project-files/"+b.dataset.pfdel,{method:"DELETE"});}catch(e){alert(e.message);}loadPFiles();});});
   loadPFiles();
+  const NOTIF_LABEL={added:"Added to project",assigned:"Item assigned to you",status:"Item status changes",comment:"New comments",file:"New attachments"};
+  api("/api/pm-projects/"+p.id+"/notifications").then(rows=>{
+    $("#pnBody").innerHTML=rows.map(r=>`<tr>
+      <td>${esc(NOTIF_LABEL[r.type]||r.type)}</td>
+      <td style="text-align:center"><input type="checkbox" data-nin="${r.type}" ${r.inApp?"checked":""} style="width:auto"></td>
+      <td style="text-align:center"><input type="checkbox" data-nem="${r.type}" ${r.email?"checked":""} style="width:auto"></td>
+    </tr>`).join("");
+    const saveNotif=async(type)=>{
+      const body={[type]:{inApp:$(`[data-nin="${type}"]`).checked,email:$(`[data-nem="${type}"]`).checked}};
+      try{await api("/api/pm-projects/"+p.id+"/notifications",{method:"PUT",body:JSON.stringify(body)});}catch(e){alert(e.message);}};
+    $$("[data-nin],[data-nem]",m).forEach(cb=>cb.onchange=()=>saveNotif(cb.dataset.nin||cb.dataset.nem));
+  }).catch(()=>{$("#pnBody").innerHTML='<tr><td colspan="3" class="empty">Could not load</td></tr>';});
   $("#pfup").onclick=async()=>{
     const f=$("#pfpick").files[0]; if(!f){alert("Choose a file first");return;}
     if(f.size>25*1024*1024){alert("Max 25 MB");return;}
@@ -865,12 +1058,13 @@ function projectSettingsModal(p){
     $("#pfup").textContent="Upload";};
   $("#pssave").onclick=async()=>{try{
     const assignees=$$("[data-member]",m).filter(c=>c.checked).map(c=>c.dataset.member).join(",");
+    const type=$("#psc").value;
+    if(type==="client"&&!$("#pscust")?.value){$("#pserr").textContent="Attach a customer first (Customer tab)";return;}
     await api("/api/pm-projects/"+p.id,{method:"PUT",body:JSON.stringify({
       name:$("#psn").value,description:$("#psd").value,priority:$("#psp").value,
       projectStatus:$("#pss").value,dueDate:$("#psdd").value||null,
-      category:$("#psc").value,targetDate:$("#pstd").value||null,
-      clientName:$("#pscn").value||null,clientContactName:$("#pscc").value||null,
-      clientPhone:$("#pscp").value||null,clientEmail:$("#psce").value||null,
+      category:type,targetDate:$("#pstd").value||null,
+      customerId:$("#pscust")?.value||null,
       version:$("#psver").value||null,
       assignedTo:{id:Number($("#pso").value)},assignees})});
     PROJECTS=await api("/api/pm-projects");closePanels();render();
@@ -886,15 +1080,15 @@ async function renderBoard(projectId){
     api("/api/pm-stories?projectId="+projectId),
     api("/api/analytics?projectId="+projectId).catch(()=>null)]);
   BOARD_CRIT=new Map((boardAnalytics?.stories||[]).map(a=>[a.id,a]));
+  $("#tbActions").innerHTML=`
+    <input type="search" id="fq" placeholder="Search…" value="${esc(FILTER.q)}">
+    ${(ME.role==="ADMIN"||p.assignedTo?.id===ME.id||(ME.role==="DEVLEAD"&&String(p.assignees||"").split(",").map(Number).includes(ME.id)))?`<button data-act="project-settings" data-id="${projectId}">⚙ Settings</button>`:""}
+    ${ME.role!=="DEV"?`<button class="primary" data-act="new-story" data-project="${projectId}">+ New item</button>`:""}`;
   $("#main").innerHTML=`
   <div class="board-head">
     ${["all","Story","Issue","Bug"].map(t=>`<button class="fchip ${FILTER.type===t?"on":""}" data-f="${t}">${t}</button>`).join("")}
     <select id="fAssignee" style="width:auto"><option value="">everyone</option>
       ${USERS.map(u=>`<option value="${u.id}" ${String(FILTER.assignee)===String(u.id)?"selected":""}>${esc(u.displayName)}</option>`).join("")}</select>
-    <input type="search" id="fq" placeholder="SEARCH…" value="${esc(FILTER.q)}">
-    <span style="flex:1"></span>
-    ${(ME.role==="ADMIN"||p.assignedTo?.id===ME.id||(ME.role==="DEVLEAD"&&String(p.assignees||"").split(",").map(Number).includes(ME.id)))?`<button data-act="project-settings" data-id="${projectId}">⚙ Settings</button>`:""}
-    ${ME.role!=="DEV"?`<button class="primary" data-act="new-story" data-project="${projectId}">+ New item</button>`:""}
   </div>
   <div class="ktabs">${STATUSES.map(st=>`
     <button class="fchip ${(FILTER.mcol||"Backlog")===st?"on":""}" data-mcol="${st}">${st}<span class="kn" id="kn-${stampCls(st)}">0</span></button>`).join("")}</div>
@@ -1101,10 +1295,10 @@ function storyDrawer(s,projectId){
 // ---------- team ----------
 async function renderTeam(){
   const all=await api("/api/users"); // includes disabled accounts
+  $("#tbActions").innerHTML=`<button class="primary" data-act="new-user">+ Add user</button>`;
   $("#main").innerHTML=`
-  <div style="display:flex;justify-content:flex-end;margin-bottom:18px"><button class="primary" data-act="new-user">+ Add user</button></div>
   <div class="block"><div class="bhead"><h2>Team</h2><div class="note">${all.filter(u=>u.enabled).length} active · ${all.filter(u=>!u.enabled).length} disabled</div></div>
-  <table class="cardify"><thead><tr><th>Name</th><th>Username</th><th>Email</th><th>Role</th><th>Last login</th><th>Actions</th></tr></thead><tbody>
+  <table class="tbl-compact"><thead><tr><th>Name</th><th>Username</th><th>Email</th><th>Role</th><th>Last login</th><th>Actions</th></tr></thead><tbody>
   ${all.map(u=>`<tr style="${u.enabled?"":"opacity:.45"}"><td><b>${esc(u.displayName)}</b>${u.enabled?"":" <span class='stamp'>disabled</span>"}</td>
     <td class="mono" data-l="Username">${esc(u.username)}</td>
     <td class="mono" data-l="Email">${esc(u.email||"—")}</td>
@@ -1196,7 +1390,7 @@ function inviteModal(u){
 }
 
 // ---------- access control (admin: which roles see which pages) ----------
-const RBAC_PAGE_LABELS={dashboard:"Dashboard",tasks:"All Tasks",command:"Command",products:"Products",clients:"Clients",internal:"Internal Works",team:"Team"};
+const RBAC_PAGE_LABELS={dashboard:"Dashboard",tasks:"All Tasks",command:"Command",products:"Products",clients:"Clients",internal:"Internal Works",customers:"Customers",team:"Team"};
 const RBAC_ROLES=["DEV","DEVLEAD","ADMIN"];
 function renderAccess(){
   $("#main").innerHTML=`

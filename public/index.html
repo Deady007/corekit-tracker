@@ -13,15 +13,20 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-/* ============ NOTION-STYLE SYSTEM ============
-   clean paper, soft 1px hairline borders, subtle shadows, rounded corners.
-   calm and legible — content first, chrome second. */
+/* ============ NEOMORPHIC SYSTEM — 5 colors only ============
+   white / black / orange / red / blue. Soft-extruded surfaces via a dual
+   light+dark shadow pair (tints of white/black, not new hues), generous
+   radii, inset "pressed" fields instead of hard borders. */
 :root{
-  --paper:#FFFFFF; --paper2:#F7F6F3; --ink:#37352F; --dim:#787774;
-  --yellow:#FDECC8; --red:#EB5757; --blue:#2F80ED; --green:#2E9E5B; --white:#FFFFFF;
-  --line:#E9E8E4; --accent:#2F80ED;
-  --bd:1px solid var(--line); --shadow:0 1px 2px rgba(15,15,15,.05),0 2px 6px rgba(15,15,15,.04); --shadow-sm:0 1px 2px rgba(15,15,15,.06);
-  --radius:8px;
+  --paper:#ECEDF0; --paper2:#E2E4E8; --white:#FFFFFF; --ink:#1A1A1A; --dim:#6E7075;
+  --orange:#FF7A00; --orange-tint:#FFE4C2; --red:#E63946; --red-tint:#FBDADC; --blue:#2F80ED; --blue-tint:#D9E8FD;
+  --line:rgba(0,0,0,.08); --accent:var(--orange);
+  --ns-hi:rgba(255,255,255,.85); --ns-lo:rgba(163,167,178,.55);
+  --shadow:6px 6px 14px var(--ns-lo),-6px -6px 14px var(--ns-hi);
+  --shadow-sm:3px 3px 8px var(--ns-lo),-3px -3px 8px var(--ns-hi);
+  --shadow-inset:inset 3px 3px 7px var(--ns-lo),inset -3px -3px 7px var(--ns-hi);
+  --bd:1px solid var(--line);
+  --radius:16px;
   --mono:'IBM Plex Mono',ui-monospace,monospace; --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -31,43 +36,39 @@ body{font-family:var(--sans);color:var(--ink);font-size:14px;line-height:1.5}
 h1,h2,h3,h4{font-weight:700;letter-spacing:-.01em}
 
 button{font-family:var(--sans);font-size:13px;font-weight:600;letter-spacing:0;text-transform:none;
-  background:var(--white);color:var(--ink);border:var(--bd);padding:8px 14px;cursor:pointer;box-shadow:var(--shadow-sm);border-radius:var(--radius);transition:background .1s,transform .1s}
-button:hover{background:var(--paper2)}
-button:active{transform:scale(.98)}
-button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
-button.primary:hover{background:#2568c9}
-button.danger{background:var(--white);color:var(--red)}
-button.bare{box-shadow:none;border:1px solid var(--line);padding:5px 10px;font-weight:500}
-button.bare:active{transform:scale(.97)}
-button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
-input,select,textarea{font-family:var(--sans);font-size:13.5px;background:var(--white);color:var(--ink);
-  border:var(--bd);border-radius:6px;padding:9px 10px;width:100%}
+  background:var(--paper);color:var(--ink);border:none;padding:9px 15px;cursor:pointer;box-shadow:var(--shadow-sm);border-radius:12px;transition:box-shadow .12s,transform .1s}
+button:hover{box-shadow:var(--shadow)}
+button:active{box-shadow:var(--shadow-inset);transform:scale(.99)}
+button.primary{background:var(--orange);color:#fff;box-shadow:3px 3px 8px rgba(255,122,0,.35)}
+button.primary:hover{background:#e86e00;box-shadow:4px 4px 10px rgba(255,122,0,.4)}
+button.primary:active{box-shadow:var(--shadow-inset)}
+button.danger{background:var(--paper);color:var(--red)}
+button.bare{box-shadow:none;background:transparent;border:1px solid var(--line);padding:5px 10px;font-weight:500}
+button.bare:hover{box-shadow:none;background:rgba(0,0,0,.04)}
+button.bare:active{box-shadow:none;transform:scale(.97)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--orange);outline-offset:1px}
+input,select,textarea{font-family:var(--sans);font-size:13.5px;background:var(--paper);color:var(--ink);
+  border:none;box-shadow:var(--shadow-inset);border-radius:10px;padding:9px 12px;width:100%}
 textarea{min-height:90px;resize:vertical;font-family:var(--sans)}
 label{display:block;font-family:var(--sans);font-size:11.5px;font-weight:600;letter-spacing:.01em;text-transform:none;color:var(--dim);margin:14px 0 5px}
-::placeholder{color:#b0aea8}
+::placeholder{color:#9a9ba0}
 
 /* ---- shell: sidebar + main ---- */
 .shell{display:grid;grid-template-columns:230px 1fr;min-height:100vh}
-aside{background:var(--paper2);color:var(--ink);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;border-right:1px solid var(--line)}
-aside .logo{padding:18px 14px 14px}
-aside .logo .big{font-weight:700;font-size:16px;letter-spacing:-.01em;line-height:1.1}
-aside .logo .big b{color:var(--accent);font-weight:700}
+aside{background:var(--paper);color:var(--ink);display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+aside .logo{padding:20px 16px 16px}
+aside .logo .big{font-weight:700;font-size:17px;letter-spacing:-.01em;line-height:1.1}
+aside .logo .big b{color:var(--orange);font-weight:700}
 aside .logo .tag{font-family:var(--sans);font-size:11px;margin-top:3px;color:var(--dim)}
-aside nav{padding:4px 8px;display:flex;flex-direction:column}
+aside nav{padding:6px 12px;display:flex;flex-direction:column;gap:3px}
 aside nav a{font-family:var(--sans);font-size:13.5px;font-weight:500;letter-spacing:0;text-transform:none;
-  color:#4a4844;text-decoration:none;padding:6px 10px;border-left:none;border-radius:6px}
-aside nav a:hover{background:rgba(55,53,47,.06)}
-aside nav a.on{background:rgba(55,53,47,.08);color:var(--ink);font-weight:600}
-aside .plist{flex:1;overflow-y:auto;padding:10px 8px}
-aside .plist .pl-h{font-family:var(--sans);font-size:11px;letter-spacing:0;color:#9a968f;padding:8px 10px 4px;text-transform:none;font-weight:600}
-aside .plist a{display:flex;gap:8px;align-items:baseline;color:#5b5852;text-decoration:none;font-size:12.5px;padding:5px 10px;border-radius:6px}
-aside .plist a:hover{background:rgba(55,53,47,.06);color:var(--ink)}
-aside .plist a .k{font-family:var(--mono);font-size:10px;color:#a09c94;min-width:34px}
-aside .who{border-top:1px solid var(--line);padding:12px 14px}
+  color:var(--dim);text-decoration:none;padding:9px 12px;border-radius:10px}
+aside nav a:hover{background:rgba(0,0,0,.04);color:var(--ink)}
+aside nav a.on{background:var(--paper);color:var(--orange);font-weight:700;box-shadow:var(--shadow-inset)}
+aside .who{border-top:var(--bd);padding:14px 16px;margin-top:auto}
 aside .who .nm{font-weight:600;font-size:13px;color:var(--ink)}
 aside .who .rl{font-family:var(--sans);font-size:11px;color:var(--dim)}
-aside .who button{margin-top:10px;width:100%;background:var(--white);color:var(--ink);border-color:var(--line);box-shadow:none}
-aside .who button:hover{background:var(--paper2)}
+aside .who button{margin-top:10px;width:100%}
 
 .mainwrap{min-width:0}
 .topbar{display:flex;align-items:center;gap:14px;padding:16px 26px;border-bottom:var(--bd);background:var(--paper);position:sticky;top:0;z-index:30}
@@ -90,11 +91,12 @@ main{padding:24px 26px 90px}
 .tile .n{font-weight:800;font-size:30px;line-height:1}
 .tile .t{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.02em;text-transform:none;color:var(--dim);margin-top:6px}
 .tile .s{font-family:var(--sans);font-size:11px;color:var(--dim);margin-top:2px}
-.tile.warn{background:#FDEDEC;border-color:#F5C6C4}
-.tile.warn .n,.tile.warn .t{color:#C0392B}
-.tile.go{background:#E9F7EF;border-color:#BEE5CD}
-.tile.go .n,.tile.go .t{color:#1E8449}
-.tile.hot{background:#FFF7E0;border-color:#F5E3A8}
+.tile.warn{background:var(--red-tint)}
+.tile.warn .n,.tile.warn .t{color:var(--red)}
+.tile.go{background:var(--paper)}
+.tile.go .n,.tile.go .t{color:var(--ink)}
+.tile.hot{background:var(--orange-tint)}
+.tile.hot .n,.tile.hot .t{color:#8a4300}
 
 /* ---- blocks & tables ---- */
 .block{background:var(--white);border:var(--bd);box-shadow:var(--shadow);margin-bottom:22px;border-radius:var(--radius);overflow:hidden}
@@ -109,16 +111,16 @@ th,td{padding:9px 14px;text-align:left;border-bottom:1px solid var(--paper2);fon
 th{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.02em;text-transform:none;background:var(--paper2);color:var(--dim)}
 td.mono{font-size:11.5px}
 .stamp{display:inline-block;font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:0;text-transform:none;
-  border:1px solid var(--line);border-radius:5px;padding:2px 8px;background:var(--paper2);color:var(--ink)}
-.stamp.High{background:#FDECEB;color:#C0392B;border-color:#F5C6C4}
-.stamp.Medium{background:#FFF7E0;color:#8A6D1D;border-color:#F5E3A8}
+  border:none;border-radius:6px;padding:3px 9px;background:var(--paper2);color:var(--ink)}
+.stamp.High{background:var(--red-tint);color:var(--red)}
+.stamp.Medium{background:var(--orange-tint);color:#8a4300}
 .stamp.Low{background:var(--paper2);color:var(--dim)}
-.stamp.Done{background:#E9F7EF;color:#1E8449;border-color:#BEE5CD}
+.stamp.Done{background:var(--ink);color:#fff}
 .stamp.Backlog{background:var(--paper2);color:var(--dim)}
-.stamp.InProgress{background:#FFF7E0;color:#8A6D1D;border-color:#F5E3A8}
-.stamp.InReview{background:#EAF2FE;color:#1D5BB8;border-color:#C9DFFA}
-.stamp.Bug{background:#FDECEB;color:#C0392B;border-color:#F5C6C4}
-.stamp.Issue{background:#EAF2FE;color:#1D5BB8;border-color:#C9DFFA}
+.stamp.InProgress{background:var(--orange-tint);color:#8a4300}
+.stamp.InReview{background:var(--blue-tint);color:#1D5BB8}
+.stamp.Bug{background:var(--red-tint);color:var(--red)}
+.stamp.Issue{background:var(--blue-tint);color:#1D5BB8}
 .stamp.Story{background:var(--paper2);color:var(--dim)}
 .late{color:var(--red);font-family:var(--sans);font-weight:600;font-size:11.5px}
 .empty{color:var(--dim);font-family:var(--sans);font-size:13px;padding:22px;text-align:center;text-transform:none;letter-spacing:0}
@@ -146,6 +148,7 @@ td.mono{font-size:11.5px}
 .kcol .khead{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--white);color:var(--ink);border-bottom:var(--bd)}
 .kcol .khead h4{font-family:var(--sans);font-size:12.5px;font-weight:700;letter-spacing:0}
 .kcol .khead .cnt{font-family:var(--sans);font-size:11px;font-weight:700;background:var(--kc);color:var(--ink);padding:1px 8px;border-radius:99px}
+.kcol[data-status="In Progress"] .khead .cnt{color:#fff}
 .kcol[data-status="In Review"] .khead .cnt{color:#fff}
 .kcol[data-status="Done"] .khead .cnt{color:#fff}
 .klist{padding:10px;display:flex;flex-direction:column;gap:10px;min-height:70px}
@@ -177,6 +180,11 @@ td.mono{font-size:11.5px}
 .dsec-h{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 12px;
   background:var(--paper2);color:var(--ink);font-family:var(--sans);font-size:12px;font-weight:700;letter-spacing:0;text-transform:none}
 .dsec-h .sq{display:inline-block;width:8px;height:8px;border-radius:99px;margin-right:9px;vertical-align:-1px;background:var(--sc,var(--accent))}
+.dtabs{display:flex;gap:6px;padding:10px 18px 0;border-bottom:var(--bd);background:var(--paper2)}
+.dtab{font-family:var(--sans);font-size:12.5px;font-weight:600;padding:8px 14px;border:none;background:transparent;box-shadow:none;color:var(--dim);cursor:pointer;border-bottom:2px solid transparent;border-radius:0}
+.dtab:hover{background:transparent;color:var(--ink)}
+.dtab.on{color:var(--ink);border-bottom-color:var(--accent)}
+.dpane[hidden]{display:none}
 .dsec-h .n{color:var(--dim);letter-spacing:0;font-weight:500}
 .dsec-b{padding:2px 14px 14px}
 .dsec-b>label:first-child,.dsec-b .row2>div>label{margin-top:12px}
@@ -185,7 +193,7 @@ td.mono{font-size:11.5px}
 .comment .ch b{color:var(--ink)}
 .comment p{font-size:13px;margin-top:2px}
 .comment img{max-width:100%;max-height:220px;border:var(--bd);border-radius:6px;margin-top:6px;display:block;cursor:zoom-in}
-.pending-img{display:flex;align-items:center;gap:8px;font-family:var(--sans);font-size:11.5px;background:var(--yellow);border-radius:6px;border:1px solid #F5E3A8;padding:4px 8px;margin-top:8px}
+.pending-img{display:flex;align-items:center;gap:8px;font-family:var(--sans);font-size:11.5px;background:var(--orange-tint);border-radius:6px;padding:4px 8px;margin-top:8px}
 .hist-row{display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--paper2);font-size:12px;align-items:baseline}
 .hist-row .ht{font-family:var(--mono);font-size:9.5px;color:var(--dim);min-width:86px}
 .hist-row b{font-weight:700}
@@ -234,10 +242,10 @@ td.mono{font-size:11.5px}
 .pc-sugg{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
 .pc-sugg li{list-style:none;font-size:12px;color:var(--dim);padding:3px 0 3px 20px;position:relative}
 .pc-sugg li::before{content:"·";position:absolute;left:4px;font-weight:700}
-.pc-sugg li.warn{color:#C0392B}
+.pc-sugg li.warn{color:var(--red)}
 .pc-sugg li.warn::before{content:"!"}
-.pc-target{display:inline-block;font-family:var(--sans);font-size:11px;font-weight:600;border:1px solid var(--line);border-radius:5px;padding:2px 8px;background:var(--yellow);color:#8A6D1D;margin-top:2px}
-.pc-target.passed{background:#FDECEB;color:#C0392B;border-color:#F5C6C4}
+.pc-target{display:inline-block;font-family:var(--sans);font-size:11px;font-weight:600;border-radius:5px;padding:2px 8px;background:var(--orange-tint);color:#8a4300;margin-top:2px}
+.pc-target.passed{background:var(--red-tint);color:var(--red)}
 
 /* ---- mobile ---- */
 .menu-btn{display:none}
@@ -264,8 +272,8 @@ td.mono{font-size:11.5px}
 @media(max-width:700px){
   .ktabs{display:flex;gap:8px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px}
   .ktabs .fchip{white-space:nowrap}
-  .ktabs .fchip .kn{display:inline-block;min-width:16px;text-align:center;background:var(--yellow);color:var(--ink);margin-left:6px;padding:0 3px;border:1px solid var(--ink)}
-  .ktabs .fchip.on .kn{background:var(--paper)}
+  .ktabs .fchip .kn{display:inline-block;min-width:16px;text-align:center;background:var(--orange-tint);color:var(--ink);margin-left:6px;padding:0 3px;border-radius:4px}
+  .ktabs .fchip.on .kn{background:#fff;color:var(--ink)}
   .kanban{display:block}
   .kanban .kcol{display:none}
   .kanban .kcol.active{display:block}
@@ -291,11 +299,12 @@ td.mono{font-size:11.5px}
 const $=(s,el=document)=>el.querySelector(s), $$=(s,el=document)=>[...el.querySelectorAll(s)];
 const esc=(s)=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const STATUSES=["Backlog","In Progress","In Review","Done"];
-const KC={Backlog:"#F2EFE8","In Progress":"#FFD900","In Review":"#2733E6",Done:"#00A651"};
+const KC={Backlog:"#E2E4E8","In Progress":"#FF7A00","In Review":"#2F80ED",Done:"#1A1A1A"};
 const fmtD=(d)=>d?new Date(d).toLocaleDateString("en-GB",{day:"numeric",month:"short"}):"";
 const fmtSize=(b)=>b>1048576?(b/1048576).toFixed(1)+" MB":Math.max(1,Math.round(b/1024))+" KB";
 const initials=(n)=>String(n||"?").split(/\s+/).map(w=>w[0]).slice(0,2).join("").toUpperCase();
 const stampCls=(v)=>String(v||"").replace(/\s/g,"");
+const stampLabel=(v)=>v==="Done"?"✓ Done":esc(v);
 const isPast=(d)=>d&&new Date(d)<new Date(new Date().toDateString());
 
 let ME=null, USERS=[], PROJECTS=[], STORIES=[], NOTIFS=[], BOARD_STORIES=[], BOARD_CRIT=new Map(), RBAC={};
@@ -317,10 +326,7 @@ function route(){
   if(m) return {view:"board",projectId:Number(m[1])};
   const rt=/^#\/reset\/([\w-]+)/.exec(h);
   if(rt) return {view:"reset",token:rt[1]};
-  const shp=/^#\/showcase\/project\/([\w-]+)/.exec(h);
-  if(shp) return {view:"showcase-project",token:shp[1]};
-  const shu=/^#\/showcase\/person\/([\w-]+)/.exec(h);
-  if(shu) return {view:"showcase-person",token:shu[1]};
+  if(h.startsWith("#/tasks")) return {view:"tasks"};
   if(h.startsWith("#/products")) return {view:"products"};
   if(h.startsWith("#/clients")||h.startsWith("#/projects")) return {view:"clients"};
   if(h.startsWith("#/internal")) return {view:"internal"};
@@ -355,21 +361,18 @@ function render(){
   const app=$("#app");
   const r0=route();
   if(r0.view==="reset"){app.innerHTML=resetView(r0.token);return;}
-  if(r0.view==="showcase-project"){app.innerHTML=`<div class="login-wrap"><div class="login" style="text-align:center">Loading…</div></div>`;renderShowcaseProject(r0.token);return;}
-  if(r0.view==="showcase-person"){app.innerHTML=`<div class="login-wrap"><div class="login" style="text-align:center">Loading…</div></div>`;renderShowcasePerson(r0.token);return;}
   if(!ME){app.innerHTML=loginView();return;}
   const r=r0;
   const unread=NOTIFS.filter(n=>!n.read).length;
   const boardProject=r.view==="board"?PROJECTS.find(p=>p.id===r.projectId):null;
-  const titles={dashboard:"My Dashboard",command:"Command",products:"Product Lab",clients:"Client Projects",internal:"Internal Works",team:"Team",access:"Access Control",board:boardProject?.name||"Board"};
-  const products=PROJECTS.filter(p=>p.category==="product"), clients=PROJECTS.filter(p=>p.category==="client"||!p.category), internal=PROJECTS.filter(p=>p.category==="internal");
-  const plink=(p)=>`<a href="#/board/${p.id}"><span class="k">${esc(p.key)}</span>${esc(p.name)}</a>`;
+  const titles={dashboard:"My Dashboard",tasks:"All Tasks",command:"Command",products:"Products",clients:"Clients",internal:"Internal Works",team:"Team",access:"Access Control",board:boardProject?.name||"Board"};
   app.innerHTML=`
   <div class="shell">
     <aside>
       <div class="logo"><div class="big">Trivyah</div><div class="tag">Task Manager</div></div>
       <nav>
         ${canSeePage("dashboard")?`<a href="#/dashboard" class="${r.view==="dashboard"?"on":""}">Dashboard</a>`:""}
+        ${canSeePage("tasks")?`<a href="#/tasks" class="${r.view==="tasks"?"on":""}">All Tasks</a>`:""}
         ${canSeePage("command")?`<a href="#/command" class="${r.view==="command"?"on":""}">Command</a>`:""}
         ${canSeePage("products")?`<a href="#/products" class="${r.view==="products"?"on":""}">Products</a>`:""}
         ${canSeePage("clients")?`<a href="#/clients" class="${r.view==="clients"?"on":""}">Clients</a>`:""}
@@ -377,11 +380,6 @@ function render(){
         ${canSeePage("team")?`<a href="#/team" class="${r.view==="team"?"on":""}">Team</a>`:""}
         ${ME.role==="ADMIN"?`<a href="#/access" class="${r.view==="access"?"on":""}">Access Control</a>`:""}
       </nav>
-      <div class="plist">
-        ${products.length?`<div class="pl-h">Products</div>${products.map(plink).join("")}`:""}
-        ${clients.length?`<div class="pl-h" style="margin-top:8px">Clients</div>${clients.map(plink).join("")}`:""}
-        ${internal.length?`<div class="pl-h" style="margin-top:8px">Internal</div>${internal.map(plink).join("")}`:""}
-      </div>
       <div class="who"><div class="nm">${esc(ME.displayName)}</div><div class="rl">${esc(ME.role)}</div>
         <button data-act="logout">Log out</button></div>
     </aside>
@@ -403,6 +401,7 @@ function render(){
   <div class="modal" id="modal"></div>`;
   if(r.view!=="board"&&r.view!=="access"&&!canSeePage(r.view)){location.hash="#/dashboard";return;}
   if(r.view==="dashboard") renderDashboard();
+  else if(r.view==="tasks") renderTasks();
   else if(r.view==="command") renderCommand();
   else if(r.view==="products") renderProducts();
   else if(r.view==="clients") renderProjects();
@@ -490,64 +489,6 @@ return `<div class="login-wrap"><form class="login" id="resetForm">
   <button class="primary" style="width:100%;margin-top:8px">Set password →</button>
 </form></div>`;}
 
-// ---------- public showcase pages (no login) ----------
-async function renderShowcaseProject(token){
-  const app=$("#app");
-  let d; try{d=await api("/api/showcase/project/"+token);}
-  catch{app.innerHTML=`<div class="login-wrap"><div class="login"><div class="big">Trivyah Task Manager</div><p style="margin-top:14px">This showcase link is invalid or has been revoked.</p></div></div>`;return;}
-  const counts=d.storyCounts||{};
-  const board=d.board||[];
-  app.innerHTML=`<div style="min-height:100vh;background:var(--paper2);padding:40px 20px">
-    <div style="max-width:1100px;margin:0 auto;background:var(--white);border:var(--bd);border-radius:var(--radius);box-shadow:var(--shadow);padding:30px 34px">
-      <div class="tag" style="font-family:var(--sans);font-size:12px;color:var(--dim)">${d.clientName?esc(d.clientName)+" · ":""}${esc(d.category||"")}</div>
-      <div class="big" style="font-weight:800;font-size:26px;margin-top:4px;letter-spacing:-.01em">${esc(d.name)}</div>
-      ${d.description?`<p style="margin-top:10px;color:var(--dim)">${esc(d.description)}</p>`:""}
-      <div class="foot" style="display:flex;gap:8px;flex-wrap:wrap;margin:16px 0">
-        <span class="stamp">${esc(d.projectStatus)}</span><span class="stamp ${esc(d.priority)}">${esc(d.priority)}</span>
-        ${d.dueDate?`<span class="stamp">due ${fmtD(d.dueDate)}</span>`:""}</div>
-      <div class="tiles">${tiles([
-        [counts.Backlog||0,"Backlog"],[counts["In Progress"]||0,"In progress"],
-        [counts["In Review"]||0,"In review"],[counts.Done||0,"Done","",""]])}</div>
-
-      <h2 style="font-size:15px;margin:26px 0 12px">Board <span style="color:var(--dim);font-weight:500">(read-only)</span></h2>
-      <div class="kanban">${STATUSES.map(st=>{
-        const items=board.filter(s=>s.storyStatus===st);
-        return `<div class="kcol" data-status="${st}">
-          <div class="khead"><h4>${st}</h4><span class="cnt" style="--kc:${KC[st]};background:${KC[st]}">${items.length}</span></div>
-          <div class="klist">${items.map(s=>{const od=isPast(s.dueDate)&&st!=="Done";
-            return `<div class="card" style="cursor:default">
-            <div class="top"><span class="num">${esc(s.number)}</span><span class="stamp ${stampCls(s.type)}" style="border-width:1px">${esc(s.type)}</span></div>
-            <div class="nm">${esc(s.name)}</div>
-            <div class="bot"><div class="meta">
-              ${s.priority==="High"?'<span style="color:var(--red);font-weight:700">HIGH</span>':""}
-              ${s.dueDate?`<span class="${od?"late":""}">${od?"⚑ ":""}${fmtD(s.dueDate)}</span>`:""}
-              ${s.module?`<span>${esc(s.module)}</span>`:""}</div>
-            <div class="who" title="${esc(s.assigneeName||"unassigned")}">${initials(s.assigneeName)}</div></div></div>`;}).join("")||'<div class="empty" style="padding:12px;font-size:11px">Empty</div>'}</div>
-        </div>`;}).join("")}</div>
-
-      ${d.media?.length?`<div class="block" style="margin-top:24px"><div class="bhead"><h2>Media</h2></div><div class="bpad" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px">
-        ${d.media.map(f=>f.kind==="image"?`<img src="${f.url}" alt="${esc(f.filename)}" style="width:100%;border:var(--bd);border-radius:6px;object-fit:cover;aspect-ratio:1">`
-          :`<video src="${f.url}" controls style="width:100%;border:var(--bd);border-radius:6px"></video>`).join("")}</div></div>`:""}
-      <div style="text-align:center;margin-top:24px;font-family:var(--mono);font-size:10px;color:var(--dim)">Shared read-only view — Trivyah Task Manager</div>
-    </div></div>`;
-}
-async function renderShowcasePerson(token){
-  const app=$("#app");
-  let d; try{d=await api("/api/showcase/person/"+token);}
-  catch{app.innerHTML=`<div class="login-wrap"><div class="login"><div class="big">Trivyah Task Manager</div><p style="margin-top:14px">This showcase link is invalid or has been revoked.</p></div></div>`;return;}
-  app.innerHTML=`<div class="login-wrap" style="align-items:flex-start;padding-top:60px">
-    <div class="login" style="width:640px;max-width:96vw;text-align:left">
-      <div class="tag">${esc(d.role||"")}</div>
-      <div class="big" style="font-size:28px;margin-top:4px">${esc(d.displayName)}</div>
-      <div class="tiles">${tiles([
-        [d.storiesDone,"Items shipped"],[d.storiesTotal,"Items worked on"],[d.score,"Effort score"]])}</div>
-      <div class="block"><div class="bhead"><h2>Projects</h2></div>
-        <div class="bpad" style="display:flex;flex-wrap:wrap;gap:8px">
-          ${d.projects?.length?d.projects.map(p=>`<span class="stamp">${esc(p.key)} — ${esc(p.name)}</span>`).join(""):'<span class="empty">No project work yet</span>'}</div></div>
-      <div style="text-align:center;margin-top:20px;font-family:var(--mono);font-size:10px;color:var(--dim)">Shared read-only view — Trivyah Task Manager</div>
-    </div></div>`;
-}
-
 // ---------- dashboard ----------
 let ANALYTICS=null;
 const tiles=(arr)=>arr.map(([n,t,s,cls])=>`<div class="tile ${cls||""}"><div class="n">${n}</div><div class="t">${t}</div><div class="s">${s||""}</div></div>`).join("");
@@ -574,11 +515,63 @@ async function renderDashboard(){
       <td><span class="mono" style="font-size:11px">${esc(s.number)}</span> ${esc(s.name)}</td>
       <td class="mono" data-l="Project">${esc(s.project?.key||"")}</td>
       <td data-l="Type"><span class="stamp ${stampCls(s.type)}">${esc(s.type)}</span></td>
-      <td data-l="Status"><span class="stamp ${stampCls(s.storyStatus)}">${esc(s.storyStatus)}</span></td>
+      <td data-l="Status"><span class="stamp ${stampCls(s.storyStatus)}">${stampLabel(s.storyStatus)}</span></td>
       <td data-l="Priority"><span class="stamp ${stampCls(s.priority)}">${esc(s.priority)}</span></td>
       <td data-l="Due">${s.dueDate?(isPast(s.dueDate)?`<span class="late">${fmtD(s.dueDate)} ⚑</span>`:fmtD(s.dueDate)):"—"}</td></tr>`).join("")}</tbody></table>`
     :'<div class="empty">Nothing assigned to you. Enjoy it while it lasts.</div>'}</div>`;
   $("#main").innerHTML=html;
+}
+
+// ---------- all tasks (filter by client / project / dev-devlead) ----------
+let TASK_FILTER={client:"",project:"",assignee:"",status:"",type:"",q:""};
+async function renderTasks(){
+  STORIES=await api("/api/pm-stories"); // server-side scoped to my visibility
+  const clientNames=[...new Set(PROJECTS.filter(p=>p.category==="client"&&p.clientName).map(p=>p.clientName))].sort();
+  $("#main").innerHTML=`
+  <div class="board-head">
+    <select id="tfClient" style="width:auto"><option value="">All clients</option>
+      ${clientNames.map(c=>`<option value="${esc(c)}" ${TASK_FILTER.client===c?"selected":""}>${esc(c)}</option>`).join("")}</select>
+    <select id="tfProject" style="width:auto"><option value="">All projects</option>
+      ${PROJECTS.map(p=>`<option value="${p.id}" ${String(TASK_FILTER.project)===String(p.id)?"selected":""}>${esc(p.key)} — ${esc(p.name)}</option>`).join("")}</select>
+    <select id="tfAssignee" style="width:auto"><option value="">Everyone</option>
+      ${USERS.map(u=>`<option value="${u.id}" ${String(TASK_FILTER.assignee)===String(u.id)?"selected":""}>${esc(u.displayName)}</option>`).join("")}</select>
+    <select id="tfStatus" style="width:auto"><option value="">Any status</option>
+      ${STATUSES.map(s=>`<option ${TASK_FILTER.status===s?"selected":""}>${s}</option>`).join("")}</select>
+    <select id="tfType" style="width:auto"><option value="">Any type</option>
+      ${["Story","Issue","Bug"].map(t=>`<option ${TASK_FILTER.type===t?"selected":""}>${t}</option>`).join("")}</select>
+    <input type="search" id="tfQ" placeholder="SEARCH…" value="${esc(TASK_FILTER.q)}">
+  </div>
+  <div class="block"><div class="bhead"><h2>Tasks</h2><div class="note" id="tfCount"></div></div>
+    <div id="tfBody"></div></div>`;
+  const paint=()=>{
+    const vis=STORIES.filter(s=>
+      (!TASK_FILTER.client||s.project?.clientName===TASK_FILTER.client)&&
+      (!TASK_FILTER.project||String(s.project?.id)===String(TASK_FILTER.project))&&
+      (!TASK_FILTER.assignee||String(s.assignedTo?.id)===String(TASK_FILTER.assignee))&&
+      (!TASK_FILTER.status||s.storyStatus===TASK_FILTER.status)&&
+      (!TASK_FILTER.type||s.type===TASK_FILTER.type)&&
+      (!TASK_FILTER.q||(s.name+" "+s.number+" "+(s.module||"")).toLowerCase().includes(TASK_FILTER.q.toLowerCase())));
+    $("#tfCount").textContent=`${vis.length} item${vis.length===1?"":"s"}`;
+    $("#tfBody").innerHTML=vis.length?`<table class="cardify"><thead><tr><th>Item</th><th>Project</th><th>Client</th><th>Assignee</th><th>Type</th><th>Status</th><th>Priority</th><th>Due</th></tr></thead><tbody>
+      ${vis.sort((a,b)=>String(a.dueDate||"9999").localeCompare(String(b.dueDate||"9999")))
+        .map(s=>`<tr data-act="open-story" data-id="${s.id}" style="cursor:pointer">
+        <td><span class="mono" style="font-size:11px">${esc(s.number)}</span> ${esc(s.name)}</td>
+        <td class="mono" data-l="Project">${esc(s.project?.key||"")}</td>
+        <td data-l="Client">${esc(s.project?.clientName||"—")}</td>
+        <td data-l="Assignee">${esc(s.assignedTo?.displayName||"—")}</td>
+        <td data-l="Type"><span class="stamp ${stampCls(s.type)}">${esc(s.type)}</span></td>
+        <td data-l="Status"><span class="stamp ${stampCls(s.storyStatus)}">${stampLabel(s.storyStatus)}</span></td>
+        <td data-l="Priority"><span class="stamp ${stampCls(s.priority)}">${esc(s.priority)}</span></td>
+        <td data-l="Due">${s.dueDate?(isPast(s.dueDate)&&s.storyStatus!=="Done"?`<span class="late">${fmtD(s.dueDate)} ⚑</span>`:fmtD(s.dueDate)):"—"}</td></tr>`).join("")}</tbody></table>`
+      :'<div class="empty">No tasks match these filters</div>';
+  };
+  $("#tfClient").onchange=(e)=>{TASK_FILTER.client=e.target.value;paint();};
+  $("#tfProject").onchange=(e)=>{TASK_FILTER.project=e.target.value;paint();};
+  $("#tfAssignee").onchange=(e)=>{TASK_FILTER.assignee=e.target.value;paint();};
+  $("#tfStatus").onchange=(e)=>{TASK_FILTER.status=e.target.value;paint();};
+  $("#tfType").onchange=(e)=>{TASK_FILTER.type=e.target.value;paint();};
+  $("#tfQ").oninput=(e)=>{TASK_FILTER.q=e.target.value;paint();};
+  paint();
 }
 
 // ---------- command (admin/devlead: performance & allocation) ----------
@@ -646,22 +639,16 @@ async function renderCommand(){
 }
 
 // ---------- product lab ----------
+let PROD_Q="";
 async function renderProducts(){
-  const products=PROJECTS.filter(p=>p.category==="product");
+  const all=PROJECTS.filter(p=>p.category==="product");
   const year=new Date().getFullYear();
   let an=null, stories=[];
   try{[stories,an]=await Promise.all([api("/api/pm-stories"),api("/api/analytics")]);}catch{}
   const critByProject=new Map();
   for(const a of (an?.stories||[])) if(a.critical) critByProject.set(a.projectId,(critByProject.get(a.projectId)||0)+1);
 
-  $("#main").innerHTML=`
-  <div class="prod-hero">
-    <h2>Trivyah <b>Product Lab</b></h2>
-    <div class="ph-sub">Yearly build plan for our own products — SCM, HRMS, POS and friends. Track ${year} targets, watch progress, and act on the suggestions.</div>
-  </div>
-  <div style="display:flex;justify-content:flex-end;margin-bottom:16px"><button class="primary" data-act="new-project" data-cat="product">+ New product</button></div>
-  <div class="prod-grid">
-  ${products.map((p)=>{
+  const prodCard=(p)=>{
     const ps=stories.filter(s=>s.project?.id===p.id);
     const yearStories=ps.filter(s=>String(s.createdDate).startsWith(String(year)));
     const done=yearStories.filter(s=>s.storyStatus==="Done").length;
@@ -679,7 +666,7 @@ async function renderProducts(){
     if(!sugg.length)sugg.push({t:"on track — keep shipping",w:0});
     return `<div class="prodcard" data-act="open-project" data-id="${p.id}">
       <div class="pc-top"><div>
-        <div class="pc-key">${esc(p.key)} · PRODUCT</div><h3>${esc(p.name)}</h3>
+        <div class="pc-key">${esc(p.key)} · PRODUCT ${p.version?`· ${esc(p.version)}`:""}</div><h3>${esc(p.name)}</h3>
         <div class="pc-desc">${esc(p.description||"")}</div>
         ${p.targetDate?`<span class="pc-target ${isPast(p.targetDate)?"passed":""}">target ${fmtD(p.targetDate)}</span>`:""}</div></div>
       <div class="pc-progress"><div class="lbl"><span>${year} progress</span><span>${done}/${yearStories.length} · ${pct}%</span></div>
@@ -688,8 +675,37 @@ async function renderProducts(){
         ${["Backlog","In Progress","In Review","Done"].map(st=>`<span><span class="n">${ps.filter(s=>s.storyStatus===st).length}</span>${st.replace("In ","")}</span>`).join("")}
       </div>
       <ul class="pc-sugg">${sugg.slice(0,3).map(s=>`<li class="${s.w?"warn":""}">${esc(s.t)}</li>`).join("")}</ul>
-    </div>`;}).join("")||'<div class="empty" style="grid-column:1/-1">No products yet — create SCM, HRMS, POS… or flip an existing project to Product in its ⚙ Settings.</div>'}
-  </div>`;
+    </div>`;
+  };
+
+  const paint=()=>{
+    const q=PROD_Q.toLowerCase();
+    const products=all.filter(p=>!q||(p.name+" "+p.key+" "+(p.version||"")+" "+(p.assignedTo?.displayName||"")).toLowerCase().includes(q));
+    const groups=new Map();
+    for(const p of products){
+      const k=p.assignedTo?.displayName||"Unassigned devlead";
+      if(!groups.has(k))groups.set(k,[]);
+      groups.get(k).push(p);
+    }
+    const sortedKeys=[...groups.keys()].sort((a,b)=>a==="Unassigned devlead"?1:b==="Unassigned devlead"?-1:a.localeCompare(b));
+    $("#prodBody").innerHTML=products.length?sortedKeys.map(k=>`
+      <div style="font-family:var(--sans);font-size:12px;font-weight:700;color:var(--dim);margin:20px 0 10px">${esc(k)}</div>
+      <div class="prod-grid">${groups.get(k).map(prodCard).join("")}</div>`).join("")
+      :'<div class="empty">No products match your search — create SCM, HRMS, POS… or flip an existing project to Product in its ⚙ Settings.</div>';
+  };
+
+  $("#main").innerHTML=`
+  <div class="prod-hero">
+    <h2>Trivyah <b>Product Lab</b></h2>
+    <div class="ph-sub">Yearly build plan for our own products — SCM, HRMS, POS and friends. Track ${year} targets, watch progress, and act on the suggestions.</div>
+  </div>
+  <div class="board-head" style="justify-content:flex-end">
+    <input type="search" id="prodQ" placeholder="SEARCH PRODUCTS…" value="${esc(PROD_Q)}" style="max-width:260px">
+    <button class="primary" data-act="new-project" data-cat="product">+ New product</button>
+  </div>
+  <div id="prodBody"></div>`;
+  $("#prodQ").oninput=(e)=>{PROD_Q=e.target.value;paint();};
+  paint();
 }
 
 // ---------- clients ----------
@@ -705,33 +721,54 @@ function pcardHtml(p){
       <span style="flex:1"></span>
       ${String(p.assignees||"").split(",").map(Number).filter(Boolean).slice(0,5).map(id=>{
         const u=USERS.find(x=>x.id===id);
-        return u?`<span class="who" style="width:22px;height:22px;background:var(--ink);color:var(--yellow);display:inline-flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:8.5px;font-weight:700" title="${esc(u.displayName)}">${initials(u.displayName)}</span>`:"";
+        return u?`<span class="who" style="width:22px;height:22px;background:var(--ink);color:var(--orange);display:inline-flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:8.5px;font-weight:700" title="${esc(u.displayName)}">${initials(u.displayName)}</span>`:"";
       }).join("")}</div>
     </div>`;
 }
+let CLIENT_Q="";
 function renderProjects(){
-  const list=PROJECTS.filter(p=>p.category==="client"||!p.category);
-  const groups=new Map();
-  for(const p of list){
-    const k=p.clientName?.trim()||"Unassigned client";
-    if(!groups.has(k))groups.set(k,[]);
-    groups.get(k).push(p);
-  }
-  const sortedKeys=[...groups.keys()].sort((a,b)=>a==="Unassigned client"?1:b==="Unassigned client"?-1:a.localeCompare(b));
+  const paint=()=>{
+    const q=CLIENT_Q.toLowerCase();
+    const list=PROJECTS.filter(p=>(p.category==="client"||!p.category)&&
+      (!q||(p.name+" "+p.key+" "+(p.clientName||"")+" "+(p.clientContactName||"")).toLowerCase().includes(q)));
+    const groups=new Map();
+    for(const p of list){
+      const k=p.clientName?.trim()||"Unassigned client";
+      if(!groups.has(k))groups.set(k,[]);
+      groups.get(k).push(p);
+    }
+    const sortedKeys=[...groups.keys()].sort((a,b)=>a==="Unassigned client"?1:b==="Unassigned client"?-1:a.localeCompare(b));
+    $("#clientBody").innerHTML=list.length?sortedKeys.map(k=>`
+      <div style="font-family:var(--sans);font-size:12px;font-weight:700;color:var(--dim);margin:20px 0 10px">${esc(k)}</div>
+      <div class="pgrid">${groups.get(k).map(pcardHtml).join("")}</div>`).join("")
+      :'<div class="empty">No projects match your search</div>';
+  };
   $("#main").innerHTML=`
-  <div style="display:flex;justify-content:flex-end;margin-bottom:18px"><button class="primary" data-act="new-project" data-cat="client">+ New client project</button></div>
-  ${list.length?sortedKeys.map(k=>`
-    <div style="font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:20px 0 10px">${esc(k)}</div>
-    <div class="pgrid">${groups.get(k).map(pcardHtml).join("")}</div>`).join("")
-    :'<div class="empty">No projects yet</div>'}`;
+  <div class="board-head" style="justify-content:flex-end">
+    <input type="search" id="clientQ" placeholder="SEARCH CLIENTS…" value="${esc(CLIENT_Q)}" style="max-width:260px">
+    <button class="primary" data-act="new-project" data-cat="client">+ New client project</button>
+  </div>
+  <div id="clientBody"></div>`;
+  $("#clientQ").oninput=(e)=>{CLIENT_Q=e.target.value;paint();};
+  paint();
 }
 
 // ---------- internal works ----------
+let INTERNAL_Q="";
 function renderInternal(){
-  const list=PROJECTS.filter(p=>p.category==="internal");
+  const paint=()=>{
+    const q=INTERNAL_Q.toLowerCase();
+    const list=PROJECTS.filter(p=>p.category==="internal"&&(!q||(p.name+" "+p.key).toLowerCase().includes(q)));
+    $("#internalBody").innerHTML=`<div class="pgrid">${list.map(pcardHtml).join("")||'<div class="empty">No internal projects match — hiring, ops, internal tooling, admin work…</div>'}</div>`;
+  };
   $("#main").innerHTML=`
-  <div style="display:flex;justify-content:flex-end;margin-bottom:18px"><button class="primary" data-act="new-project" data-cat="internal">+ New internal project</button></div>
-  <div class="pgrid">${list.map(pcardHtml).join("")||'<div class="empty">No internal projects yet — hiring, ops, internal tooling, admin work…</div>'}</div>`;
+  <div class="board-head" style="justify-content:flex-end">
+    <input type="search" id="internalQ" placeholder="SEARCH INTERNAL WORKS…" value="${esc(INTERNAL_Q)}" style="max-width:260px">
+    <button class="primary" data-act="new-project" data-cat="internal">+ New internal project</button>
+  </div>
+  <div id="internalBody"></div>`;
+  $("#internalQ").oninput=(e)=>{INTERNAL_Q=e.target.value;paint();};
+  paint();
 }
 const CAT_LABEL={client:"client project",product:"product",internal:"internal project"};
 function projectModal(cat="client"){
@@ -775,6 +812,7 @@ function projectSettingsModal(p){
       <div><label>Due date</label><input id="psdd" type="date" value="${p.dueDate||""}"></div>
       <div><label>Yearly target</label><input id="pstd" type="date" value="${p.targetDate||""}"></div>
       <div><label>Owner</label><select id="pso">${USERS.map(u=>`<option value="${u.id}" ${p.assignedTo?.id===u.id?"selected":""}>${esc(u.displayName)}</option>`).join("")}</select></div>
+      <div><label>Version (products)</label><input id="psver" value="${esc(p.version||"")}" placeholder="e.g. v2.3.0"></div>
     </div>
     <label>Members — control who can see this project</label>
     <div style="border:var(--bd);background:var(--white);max-height:220px;overflow-y:auto;padding:8px 12px">
@@ -804,15 +842,6 @@ function projectSettingsModal(p){
           <button class="bare" id="pfup">Upload</button></div></div>
     </div>
 
-    <div class="dsec">
-      <div class="dsec-h"><span><i class="sq" style="--sc:var(--blue)"></i>Showcase link</span></div>
-      <div class="dsec-b" style="padding-top:12px">
-        <div style="font-size:12.5px;color:var(--dim);margin-bottom:8px">A read-only page anyone with the link can view — no login, no comments/history, just status and media.</div>
-        ${p.shareToken?`<input id="pslink" readonly value="${location.origin}/#/showcase/project/${p.shareToken}">
-        <div style="margin-top:8px;display:flex;gap:8px"><button class="bare" id="pscopy">Copy link</button><button class="bare" style="color:var(--red)" id="psrevoke">Revoke</button></div>`
-        :`<button class="bare" id="psgen">Generate showcase link</button>`}
-      </div>
-    </div>
     <div class="formerr" id="pserr"></div></div>
   <div class="mfoot"><button data-act="close">Cancel</button><button class="primary" id="pssave">Save</button></div>`;
   m.classList.add("open");$("#overlay").classList.add("open");
@@ -833,15 +862,6 @@ function projectSettingsModal(p){
     try{await api("/api/project-files",{method:"POST",body:JSON.stringify({projectId:p.id,filename:f.name,mime:f.type,kind,dataBase64:b64})});
       $("#pfpick").value="";loadPFiles();}catch(e){alert(e.message);}
     $("#pfup").textContent="Upload";};
-  $("#pscopy")?.addEventListener("click",()=>{$("#pslink").select();navigator.clipboard?.writeText($("#pslink").value);$("#pscopy").textContent="Copied ✓";});
-  $("#psgen")?.addEventListener("click",async()=>{try{
-    const updated=await api(`/api/pm-projects/${p.id}/share`,{method:"POST",body:"{}"});
-    PROJECTS=await api("/api/pm-projects");closePanels();projectSettingsModal(PROJECTS.find(x=>x.id===p.id)||updated);
-  }catch(e){alert(e.message);}});
-  $("#psrevoke")?.addEventListener("click",async()=>{if(!confirm("Revoke this showcase link? The old URL will stop working."))return;try{
-    await api(`/api/pm-projects/${p.id}/share`,{method:"POST",body:JSON.stringify({revoke:true})});
-    PROJECTS=await api("/api/pm-projects");closePanels();projectSettingsModal(PROJECTS.find(x=>x.id===p.id));
-  }catch(e){alert(e.message);}});
   $("#pssave").onclick=async()=>{try{
     const assignees=$$("[data-member]",m).filter(c=>c.checked).map(c=>c.dataset.member).join(",");
     await api("/api/pm-projects/"+p.id,{method:"PUT",body:JSON.stringify({
@@ -850,6 +870,7 @@ function projectSettingsModal(p){
       category:$("#psc").value,targetDate:$("#pstd").value||null,
       clientName:$("#pscn").value||null,clientContactName:$("#pscc").value||null,
       clientPhone:$("#pscp").value||null,clientEmail:$("#psce").value||null,
+      version:$("#psver").value||null,
       assignedTo:{id:Number($("#pso").value)},assignees})});
     PROJECTS=await api("/api/pm-projects");closePanels();render();
   }catch(e){$("#pserr").textContent=e.message;}};
@@ -936,57 +957,66 @@ function paintCards(){
 function storyDrawer(s,projectId){
   const d=$("#drawer");
   const isNew=!s;
-  const proj=PROJECTS.find(p=>p.id===projectId);
-  const canDelete=!isNew&&(ME.role==="ADMIN"||(ME.role==="DEVLEAD"&&(s?.reporter?.id===ME.id||proj?.assignedTo?.id===ME.id)));
+  const canDelete=!isNew&&ME.role==="ADMIN";
+  const tabs=isNew?["details","people"]:["details","people","activity"];
+  const tabLabel={details:"Details",people:"People & Files",activity:"Activity"};
   d.innerHTML=`
   <div class="dhead"><span style="display:flex;gap:12px;align-items:center"><span class="num">${isNew?"NEW ITEM":esc(s.number)}</span>
-    ${isNew?"":`<span class="stamp ${stampCls(s.type)}">${esc(s.type)}</span><span class="stamp ${stampCls(s.storyStatus)}">${esc(s.storyStatus)}</span>`}</span>
+    ${isNew?"":`<span class="stamp ${stampCls(s.type)}">${esc(s.type)}</span><span class="stamp ${stampCls(s.storyStatus)}">${stampLabel(s.storyStatus)}</span>`}</span>
     <button class="bare" data-act="close" style="background:var(--paper);box-shadow:none">✕</button></div>
+  <div class="dtabs">${tabs.map((t,i)=>`<button class="dtab ${i===0?"on":""}" data-dtab="${t}">${tabLabel[t]}</button>`).join("")}</div>
   <div class="dbody">
-    <div class="dsec">
-      <div class="dsec-h"><span><i class="sq"></i>Details</span></div>
-      <div class="dsec-b">
-        <label>Title</label><input id="sn" value="${esc(s?.name||"")}">
-        <label>Description</label><textarea id="sd">${esc(s?.description||"")}</textarea>
+    <div class="dpane" data-pane="details">
+      <div class="dsec">
+        <div class="dsec-h"><span><i class="sq"></i>Details</span></div>
+        <div class="dsec-b">
+          <label>Title</label><input id="sn" value="${esc(s?.name||"")}">
+          <label>Description</label><textarea id="sd">${esc(s?.description||"")}</textarea>
+        </div>
+      </div>
+      <div class="dsec">
+        <div class="dsec-h"><span><i class="sq" style="--sc:var(--blue)"></i>Triage</span></div>
+        <div class="dsec-b"><div class="row2">
+          <div><label>Type</label><select id="sty">${["Story","Issue","Bug"].map(t=>`<option ${s?.type===t?"selected":""}>${t}</option>`).join("")}</select></div>
+          <div><label>Status</label><select id="sst">${STATUSES.map(t=>`<option ${(s?.storyStatus||"Backlog")===t?"selected":""}>${t}</option>`).join("")}</select></div>
+          <div><label>Priority</label><select id="spr">${["Low","Medium","High"].map(t=>`<option ${(s?.priority||"Medium")===t?"selected":""}>${t}</option>`).join("")}</select></div>
+          <div><label>Points</label><input id="spt" type="number" min="0" value="${s?.storyPoints??""}"></div>
+          <div><label>Due date</label><input id="sdd" type="date" value="${s?.dueDate||""}"></div>
+          <div><label>Module</label><input id="sm" value="${esc(s?.module||"")}"></div>
+        </div></div>
       </div>
     </div>
-    <div class="dsec">
-      <div class="dsec-h"><span><i class="sq" style="--sc:var(--blue)"></i>Triage</span></div>
-      <div class="dsec-b"><div class="row2">
-        <div><label>Type</label><select id="sty">${["Story","Issue","Bug"].map(t=>`<option ${s?.type===t?"selected":""}>${t}</option>`).join("")}</select></div>
-        <div><label>Status</label><select id="sst">${STATUSES.map(t=>`<option ${(s?.storyStatus||"Backlog")===t?"selected":""}>${t}</option>`).join("")}</select></div>
-        <div><label>Priority</label><select id="spr">${["Low","Medium","High"].map(t=>`<option ${(s?.priority||"Medium")===t?"selected":""}>${t}</option>`).join("")}</select></div>
-        <div><label>Points</label><input id="spt" type="number" min="0" value="${s?.storyPoints??""}"></div>
-        <div><label>Due date</label><input id="sdd" type="date" value="${s?.dueDate||""}"></div>
-        <div><label>Module</label><input id="sm" value="${esc(s?.module||"")}"></div>
-      </div></div>
-    </div>
-    <div class="dsec">
-      <div class="dsec-h"><span><i class="sq" style="--sc:var(--green)"></i>People</span></div>
-      <div class="dsec-b"><div class="row2">
-        <div><label>Assignee</label><select id="sa">${USERS.map(u=>`<option value="${u.id}" ${(s?.assignedTo?.id??ME.id)===u.id?"selected":""}>${esc(u.displayName)}</option>`).join("")}</select></div>
-        <div><label>Reporter</label><input value="${esc(s?.reporter?.displayName??ME.displayName)}" disabled title="Reporter is always whoever created the item"></div>
-      </div></div>
+    <div class="dpane" data-pane="people" hidden>
+      <div class="dsec">
+        <div class="dsec-h"><span><i class="sq" style="--sc:var(--orange)"></i>People</span></div>
+        <div class="dsec-b"><div class="row2">
+          <div><label>Assignee</label><select id="sa">${USERS.map(u=>`<option value="${u.id}" ${(s?.assignedTo?.id??ME.id)===u.id?"selected":""}>${esc(u.displayName)}</option>`).join("")}</select></div>
+          <div><label>Reporter</label><input value="${esc(s?.reporter?.displayName??ME.displayName)}" disabled title="Reporter is always whoever created the item"></div>
+        </div></div>
+      </div>
+      ${isNew?"":`
+      <div class="dsec">
+        <div class="dsec-h"><span><i class="sq" style="--sc:var(--red)"></i>Attachments</span><span class="n" id="fcount"></span></div>
+        <div class="dsec-b"><div id="flist" style="margin-top:10px"><div class="empty">loading…</div></div>
+          <div style="display:flex;gap:10px;margin-top:10px;align-items:center">
+            <input type="file" id="fpick" style="border:none;padding:0;background:none">
+            <button class="bare" id="fup">Upload</button></div></div>
+      </div>`}
     </div>
     ${isNew?"":`
-    <div class="dsec">
-      <div class="dsec-h"><span><i class="sq" style="--sc:var(--red)"></i>Attachments</span><span class="n" id="fcount"></span></div>
-      <div class="dsec-b"><div id="flist" style="margin-top:10px"><div class="empty">loading…</div></div>
-        <div style="display:flex;gap:10px;margin-top:10px;align-items:center">
-          <input type="file" id="fpick" style="border:none;padding:0;background:none">
-          <button class="bare" id="fup">Upload</button></div></div>
-    </div>
-    <div class="dsec">
-      <div class="dsec-h"><span><i class="sq"></i>Comments</span><span class="n" id="ccount"></span></div>
-      <div class="dsec-b"><div id="clist" style="margin-top:6px"><div class="empty">loading…</div></div>
-        <div style="display:flex;gap:8px;margin-top:10px"><input id="cnew" placeholder="write a comment… (paste a screenshot here)">
-          <button class="bare" id="cimg" title="attach image">🖼</button><button class="bare" id="cadd">Post</button></div>
-        <input type="file" id="cimgpick" accept="image/*" style="display:none">
-        <div id="cpending"></div></div>
-    </div>
-    <div class="dsec">
-      <div class="dsec-h"><span><i class="sq" style="--sc:var(--paper)"></i>History</span><span class="n" id="hcount"></span></div>
-      <div class="dsec-b"><div id="hlist" style="margin-top:6px"><div class="empty">loading…</div></div></div>
+    <div class="dpane" data-pane="activity" hidden>
+      <div class="dsec">
+        <div class="dsec-h"><span><i class="sq"></i>Comments</span><span class="n" id="ccount"></span></div>
+        <div class="dsec-b"><div id="clist" style="margin-top:6px"><div class="empty">loading…</div></div>
+          <div style="display:flex;gap:8px;margin-top:10px"><input id="cnew" placeholder="write a comment… (paste a screenshot here)">
+            <button class="bare" id="cimg" title="attach image">🖼</button><button class="bare" id="cadd">Post</button></div>
+          <input type="file" id="cimgpick" accept="image/*" style="display:none">
+          <div id="cpending"></div></div>
+      </div>
+      <div class="dsec">
+        <div class="dsec-h"><span><i class="sq" style="--sc:var(--paper2)"></i>History</span><span class="n" id="hcount"></span></div>
+        <div class="dsec-b"><div id="hlist" style="margin-top:6px"><div class="empty">loading…</div></div></div>
+      </div>
     </div>`}
   </div>
   <div class="dfoot">
@@ -994,6 +1024,10 @@ function storyDrawer(s,projectId){
     <button class="primary" id="ssave">${isNew?"Create":"Save"}</button>
   </div>`;
   d.classList.add("open");$("#overlay").classList.add("open");
+  $$(".dtab",d).forEach(b=>b.onclick=()=>{
+    $$(".dtab",d).forEach(x=>x.classList.toggle("on",x===b));
+    $$(".dpane",d).forEach(p=>p.hidden=p.dataset.pane!==b.dataset.dtab);
+  });
 
   if(!isNew){
     let pendingImg=null; // {base64, mime, label}
@@ -1078,15 +1112,10 @@ async function renderTeam(){
     <td data-l="" style="white-space:nowrap">
       <button class="bare" data-uedit="${u.id}">edit</button>
       <button class="bare" data-ureset="${u.id}">reset pw</button>
-      <button class="bare" data-ushare="${u.id}">showcase link</button>
       ${u.id!==ME.id?`<button class="bare" data-utoggle="${u.id}" data-en="${u.enabled?0:1}">${u.enabled?"disable":"enable"}</button>
       <button class="bare" style="color:var(--red)" data-udel="${u.id}" data-name="${esc(u.displayName)}">delete</button>`:""}
     </td></tr>`).join("")}</tbody></table></div>`;
   $$("[data-uedit]").forEach(b=>b.onclick=()=>editUserModal(all.find(u=>u.id===Number(b.dataset.uedit))));
-  $$("[data-ushare]").forEach(b=>b.onclick=async()=>{
-    const u=all.find(x=>x.id===Number(b.dataset.ushare));
-    try{const updated=await api(`/api/users/${u.id}/share`,{method:"POST",body:"{}"});shareLinkModal(updated);}
-    catch(e){alert(e.message);}});
   $$("[data-ureset]").forEach(b=>b.onclick=async()=>{
     const u=all.find(x=>x.id===Number(b.dataset.ureset));
     b.textContent="…";
@@ -1107,7 +1136,7 @@ function editUserModal(u){
   m.innerHTML=`<div class="mhead">Edit ${esc(u.displayName)}</div><div class="mbody">
     <label>Display name</label><input id="eun" value="${esc(u.displayName)}">
     <label>Email</label><input id="eue" type="email" value="${esc(u.email||"")}" placeholder="for invites & resets">
-    <label>Role</label><select id="eur">${["USER","DEV","DEVLEAD","ADMIN"].map(r=>`<option ${u.role===r?"selected":""}>${r}</option>`).join("")}</select>
+    <label>Role</label><select id="eur">${["DEV","DEVLEAD","ADMIN"].map(r=>`<option ${u.role===r?"selected":""}>${r}</option>`).join("")}</select>
     <label>New password (leave blank to keep)</label><input id="eup" type="text" placeholder="unchanged">
     <div class="formerr" id="eerr"></div></div>
   <div class="mfoot"><button data-act="close">Cancel</button><button class="primary" id="esave">Save</button></div>`;
@@ -1131,24 +1160,13 @@ function resetLinkModal(u,r){
   m.classList.add("open");$("#overlay").classList.add("open");
   $("#rcopy").onclick=()=>{$("#rlink").select();navigator.clipboard?.writeText($("#rlink").value);$("#rcopy").textContent="Copied ✓";};
 }
-function shareLinkModal(u){
-  const m=$("#modal");
-  const link=`${location.origin}/#/showcase/person/${u.shareToken}`;
-  m.innerHTML=`<div class="mhead">Showcase link — ${esc(u.displayName)}</div><div class="mbody">
-    <p style="font-size:13px;margin-top:12px">A read-only page showing ${esc(u.displayName)}'s shipped work and effort score — anyone with the link can view it, no login needed.</p>
-    <label>Link</label><input id="rlink" readonly value="${esc(link)}">
-    <div style="margin-top:10px"><button class="bare" id="rcopy">Copy link</button></div></div>
-  <div class="mfoot"><button class="primary" data-act="close">Done</button></div>`;
-  m.classList.add("open");$("#overlay").classList.add("open");
-  $("#rcopy").onclick=()=>{$("#rlink").select();navigator.clipboard?.writeText($("#rlink").value);$("#rcopy").textContent="Copied ✓";};
-}
 function userModal(){
   const m=$("#modal");
   m.innerHTML=`<div class="mhead">Add user</div><div class="mbody">
     <label>Display name</label><input id="un">
     <label>Username (login handle)</label><input id="uu" placeholder="e.g. viral">
     <label>Email (invites &amp; password resets go here)</label><input id="ue" type="email" placeholder="name@company.com">
-    <label>Role</label><select id="ur"><option>USER</option><option>DEV</option><option>DEVLEAD</option><option>ADMIN</option></select>
+    <label>Role</label><select id="ur"><option>DEV</option><option>DEVLEAD</option><option>ADMIN</option></select>
     <label>Password (optional — leave blank to send a set-password invite)</label><input id="up" type="text" placeholder="blank = invite link">
     <div class="formerr" id="uerr"></div></div>
   <div class="mfoot"><button data-act="close">Cancel</button><button class="primary" id="usave">Create</button></div>`;
@@ -1177,8 +1195,8 @@ function inviteModal(u){
 }
 
 // ---------- access control (admin: which roles see which pages) ----------
-const RBAC_PAGE_LABELS={dashboard:"Dashboard",command:"Command",products:"Product Lab",clients:"Client Projects",internal:"Internal Works",team:"Team"};
-const RBAC_ROLES=["USER","DEV","DEVLEAD","ADMIN"];
+const RBAC_PAGE_LABELS={dashboard:"Dashboard",tasks:"All Tasks",command:"Command",products:"Products",clients:"Clients",internal:"Internal Works",team:"Team"};
+const RBAC_ROLES=["DEV","DEVLEAD","ADMIN"];
 function renderAccess(){
   $("#main").innerHTML=`
   <div class="block"><div class="bhead"><h2>Access Control</h2><div class="note">which roles can see which sections — Admin always has full access</div></div>

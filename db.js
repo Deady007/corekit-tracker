@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   username TEXT NOT NULL UNIQUE,
   displayName TEXT NOT NULL,
-  role TEXT NOT NULL DEFAULT 'USER',          -- USER | DEV | DEVLEAD | ADMIN
+  role TEXT NOT NULL DEFAULT 'DEV',           -- DEV | DEVLEAD | ADMIN
   passwordHash TEXT NOT NULL,
   salt TEXT NOT NULL,
   enabled INTEGER NOT NULL DEFAULT 1,
@@ -160,17 +160,28 @@ CREATE INDEX IF NOT EXISTS idx_project_files_project ON project_files(projectId)
 
 CREATE TABLE IF NOT EXISTS page_access (
   page TEXT PRIMARY KEY,
-  roles TEXT NOT NULL -- comma-separated: USER,DEV,DEVLEAD,ADMIN
+  roles TEXT NOT NULL -- comma-separated: DEV,DEVLEAD,ADMIN
 );
 `);
 
+// migration: roles simplified to DEV/DEVLEAD/ADMIN (USER retired)
+try { db.exec("UPDATE users SET role='DEV' WHERE role='USER'"); } catch {}
+for (const row of db.prepare("SELECT page, roles FROM page_access").all()) {
+  const cleaned = row.roles.split(",").filter((r) => r && r !== "USER").join(",");
+  if (cleaned !== row.roles) db.prepare("UPDATE page_access SET roles=? WHERE page=?").run(cleaned, row.page);
+}
+
+// migration: lightweight version label for products
+try { db.exec("ALTER TABLE projects ADD COLUMN version TEXT"); } catch {}
+
 // migration: seed default RBAC page access (idempotent — only fills missing rows)
 const DEFAULT_PAGE_ACCESS = {
-  dashboard: "USER,DEV,DEVLEAD,ADMIN",
+  dashboard: "DEV,DEVLEAD,ADMIN",
+  tasks: "DEV,DEVLEAD,ADMIN",
   command: "DEVLEAD,ADMIN",
-  products: "USER,DEV,DEVLEAD,ADMIN",
-  clients: "USER,DEV,DEVLEAD,ADMIN",
-  internal: "USER,DEV,DEVLEAD,ADMIN",
+  products: "DEV,DEVLEAD,ADMIN",
+  clients: "DEV,DEVLEAD,ADMIN",
+  internal: "DEV,DEVLEAD,ADMIN",
   team: "ADMIN",
 };
 {

@@ -61,7 +61,7 @@ function verifyPassword(user, pw) {
   return h.length === stored.length && timingSafeEqual(h, stored);
 }
 
-function createUser({ username, displayName, role = "USER", password, email }) {
+function createUser({ username, displayName, role = "DEV", password, email }) {
   const salt = randomBytes(16).toString("hex");
   db.prepare(`INSERT INTO users (username, displayName, role, passwordHash, salt, createdDate, email)
               VALUES (?,?,?,?,?,?,?)`)
@@ -112,7 +112,7 @@ const projectShape = (p) => p && {
   assignedTo: userShape(getUser(p.assignedToId)),
   clientName: p.clientName || null, clientContactName: p.clientContactName || null,
   clientPhone: p.clientPhone || null, clientEmail: p.clientEmail || null,
-  shareToken: p.shareToken || null,
+  version: p.version || null,
 };
 const getProject = (id) => db.prepare("SELECT * FROM projects WHERE id=?").get(id);
 
@@ -439,8 +439,8 @@ route("POST", "/api/users/(\\d+)/reset-link", async (req, [id]) => {
 // --- RBAC: which roles can see which top-level nav pages/sections.
 // This is a UI-organization layer, not a data security boundary — project data
 // access is still governed entirely by visibleProjectIds()/canSeeProject().
-const RBAC_PAGES = ["dashboard", "command", "products", "clients", "internal", "team"];
-const RBAC_ROLES = ["USER", "DEV", "DEVLEAD", "ADMIN"];
+const RBAC_PAGES = ["dashboard", "tasks", "command", "products", "clients", "internal", "team"];
+const RBAC_ROLES = ["DEV", "DEVLEAD", "ADMIN"];
 route("GET", "/api/rbac", () => {
   const rows = db.prepare("SELECT * FROM page_access").all();
   const out = {};
@@ -536,12 +536,13 @@ route("POST", "/api/pm-projects", (req) => {
   if (!b.name || !b.key) return { status: 400, json: { error: "name and key required" } };
   const key = String(b.key).toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
   if (db.prepare("SELECT 1 FROM projects WHERE key=?").get(key)) return { status: 409, json: { error: "key already exists" } };
-  const r = db.prepare(`INSERT INTO projects (key,name,description,priority,projectStatus,dueDate,assignees,assignedToId,createdDate,modifiedDate,category,targetDate,clientName,clientContactName,clientPhone,clientEmail)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+  const r = db.prepare(`INSERT INTO projects (key,name,description,priority,projectStatus,dueDate,assignees,assignedToId,createdDate,modifiedDate,category,targetDate,clientName,clientContactName,clientPhone,clientEmail,version)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
     .run(key, b.name, b.description || "", b.priority || "Medium", b.projectStatus || "Active",
       b.dueDate ?? null, b.assignees || String(req.user.id), b.assignedTo?.id ?? req.user.id, now(), now(),
       normCategory(b.category), b.targetDate ?? null,
-      b.clientName || null, b.clientContactName || null, b.clientPhone || null, b.clientEmail || null);
+      b.clientName || null, b.clientContactName || null, b.clientPhone || null, b.clientEmail || null,
+      b.version || null);
   return { json: projectShape(getProject(r.lastInsertRowid)) };
 });
 
@@ -552,7 +553,7 @@ route("PUT", "/api/pm-projects/(\\d+)", (req, [id]) => {
     (req.user.role === "DEVLEAD" && isProjectMember(p, req.user));
   if (!canEdit) return { status: 403, json: { error: "Only admins, the project owner, or a dev lead on this project can edit it" } };
   const b = req.body || {};
-  db.prepare(`UPDATE projects SET name=?, description=?, priority=?, projectStatus=?, dueDate=?, assignees=?, assignedToId=?, modifiedDate=?, category=?, targetDate=?, clientName=?, clientContactName=?, clientPhone=?, clientEmail=? WHERE id=?`)
+  db.prepare(`UPDATE projects SET name=?, description=?, priority=?, projectStatus=?, dueDate=?, assignees=?, assignedToId=?, modifiedDate=?, category=?, targetDate=?, clientName=?, clientContactName=?, clientPhone=?, clientEmail=?, version=? WHERE id=?`)
     .run(b.name ?? p.name, b.description ?? p.description, b.priority ?? p.priority,
       b.projectStatus ?? p.projectStatus, b.dueDate !== undefined ? b.dueDate : p.dueDate,
       b.assignees ?? p.assignees, b.assignedTo?.id ?? p.assignedToId, now(),
@@ -561,7 +562,8 @@ route("PUT", "/api/pm-projects/(\\d+)", (req, [id]) => {
       b.clientName !== undefined ? b.clientName : p.clientName,
       b.clientContactName !== undefined ? b.clientContactName : p.clientContactName,
       b.clientPhone !== undefined ? b.clientPhone : p.clientPhone,
-      b.clientEmail !== undefined ? b.clientEmail : p.clientEmail, p.id);
+      b.clientEmail !== undefined ? b.clientEmail : p.clientEmail,
+      b.version !== undefined ? b.version : p.version, p.id);
   // notify people newly added to the project
   if (b.assignees !== undefined) {
     const before = new Set(String(p.assignees || "").split(",").map(Number).filter(Boolean));
@@ -583,11 +585,9 @@ route("PUT", "/api/pm-projects/(\\d+)", (req, [id]) => {
 route("DELETE", "/api/pm-projects/(\\d+)", (req, [id]) => {
   const p = getProject(id);
   if (!p) return { status: 404, json: { error: "not found" } };
-  if (req.user.role !== "ADMIN" && p.assignedToId !== req.user.id)
-    return { status: 403, json: { error: "Only admins or the project owner can delete a project" } };
+  if (req.user.role !== "ADMIN")
+    return { status: 403, json: { error: "Only admins can delete a project" } };
   const hasStories = db.prepare("SELECT COUNT(*) c FROM stories WHERE projectId=?").get(id).c;
-  if (hasStories && req.user.role !== "ADMIN")
-    return { status: 409, json: { error: "project has stories — only an admin can delete it (cascades)" } };
   // admin cascade: remove attachment files from disk, then stories (comments/
   // history/attachments cascade via FK), then the project
   for (const a of db.prepare("SELECT a.path FROM attachments a JOIN stories s ON s.id=a.storyId WHERE s.projectId=?").all(id)) {
@@ -708,11 +708,8 @@ route("PUT", "/api/pm-stories/(\\d+)", (req, [id]) => {
 route("DELETE", "/api/pm-stories/(\\d+)", (req, [id]) => {
   const s = db.prepare("SELECT * FROM stories WHERE id=?").get(Number(id));
   if (!s || !canSeeProject(req.user, s.projectId)) return { status: 404, json: { error: "not found" } };
-  // ADMIN deletes anything; DEVLEAD only items they reported or in projects they own
-  const p = getProject(s.projectId);
-  const leadOwns = req.user.role === "DEVLEAD" && (s.reporterId === req.user.id || p?.assignedToId === req.user.id);
-  if (req.user.role !== "ADMIN" && !leadOwns)
-    return { status: 403, json: { error: "Only admins can delete this — dev leads can only delete items they reported or in projects they own" } };
+  if (req.user.role !== "ADMIN")
+    return { status: 403, json: { error: "Only admins can delete a task" } };
   for (const a of db.prepare("SELECT path FROM attachments WHERE storyId=?").all(Number(id))) {
     try { unlinkSync(join(FILES_DIR, a.path)); } catch {}
   }
@@ -883,74 +880,6 @@ route("DELETE", "/api/project-files/(\\d+)", (req, [id]) => {
   db.prepare("DELETE FROM project_files WHERE id=?").run(Number(id));
   return { json: { deleted: true } };
 });
-
-// --- shareable showcase links (public, read-only, curated — no comments/history)
-route("POST", "/api/pm-projects/(\\d+)/share", (req, [id]) => {
-  const p = getProject(id);
-  if (!p) return { status: 404, json: { error: "not found" } };
-  const canShare = req.user.role === "ADMIN" || p.assignedToId === req.user.id ||
-    (req.user.role === "DEVLEAD" && isProjectMember(p, req.user));
-  if (!canShare) return { status: 403, json: { error: "Only admins, the project owner, or a dev lead on this project can share it" } };
-  const token = req.body?.revoke ? null : (p.shareToken || randomBytes(18).toString("base64url"));
-  db.prepare("UPDATE projects SET shareToken=? WHERE id=?").run(token, p.id);
-  return { json: projectShape(getProject(p.id)) };
-});
-
-route("POST", "/api/users/(\\d+)/share", (req, [id]) => {
-  const u = getUser(Number(id));
-  if (!u) return { status: 404, json: { error: "not found" } };
-  if (req.user.role !== "ADMIN" && req.user.id !== u.id) return { status: 403, json: { error: "Admin only" } };
-  const token = req.body?.revoke ? null : (u.shareToken || randomBytes(18).toString("base64url"));
-  db.prepare("UPDATE users SET shareToken=? WHERE id=?").run(token, u.id);
-  return { json: { ...userShape(getUser(u.id)), shareToken: token } };
-});
-
-route("GET", "/api/showcase/project/([^/]+)", (req, [token]) => {
-  const p = db.prepare("SELECT * FROM projects WHERE shareToken=?").get(token);
-  if (!p) return { status: 404, json: { error: "not found" } };
-  const stories = db.prepare("SELECT * FROM stories WHERE projectId=? ORDER BY seq DESC").all(p.id);
-  const counts = { Backlog: 0, "In Progress": 0, "In Review": 0, Done: 0 };
-  for (const s of stories) counts[s.storyStatus] = (counts[s.storyStatus] || 0) + 1;
-  const media = db.prepare("SELECT * FROM project_files WHERE projectId=? AND kind IN ('image','video') ORDER BY createdDate DESC")
-    .all(p.id).map((a) => ({ id: a.id, filename: a.filename, kind: a.kind, url: `/api/showcase/project/${token}/file/${a.id}` }));
-  const board = stories.map((s) => ({
-    number: s.number, name: s.name, type: s.type, priority: s.priority,
-    storyStatus: s.storyStatus, dueDate: s.dueDate, module: s.module,
-    assigneeName: getUser(s.assignedToId)?.displayName || null,
-  }));
-  return { json: {
-    name: p.name, description: p.description, key: p.key, priority: p.priority,
-    projectStatus: p.projectStatus, dueDate: p.dueDate, category: p.category,
-    clientName: p.clientName,
-    storyCounts: counts, totalStories: stories.length, media, board,
-  } };
-}, { public: true });
-
-route("GET", "/api/showcase/project/([^/]+)/file/(\\d+)", (req, [token, id]) => {
-  const p = db.prepare("SELECT id FROM projects WHERE shareToken=?").get(token);
-  if (!p) return { status: 404, json: { error: "not found" } };
-  const a = db.prepare("SELECT * FROM project_files WHERE id=? AND projectId=?").get(Number(id), p.id);
-  if (!a) return { status: 404, json: { error: "not found" } };
-  return { raw: readFileSync(join(FILES_DIR, a.path)), headers: { "Content-Type": a.mime } };
-}, { public: true });
-
-route("GET", "/api/showcase/person/([^/]+)", (req, [token]) => {
-  const u = db.prepare("SELECT * FROM users WHERE shareToken=?").get(token);
-  if (!u) return { status: 404, json: { error: "not found" } };
-  const stories = db.prepare("SELECT * FROM stories WHERE assignedToId=?").all(u.id);
-  const projectIds = [...new Set(stories.map((s) => s.projectId))];
-  const projects = projectIds.map((id) => getProject(id)).filter(Boolean).map((p) => ({ name: p.name, key: p.key, category: p.category }));
-  const hist = db.prepare("SELECT storyId, field, newValue, createdDate FROM history WHERE field='storyStatus'").all();
-  const byStory = new Map();
-  for (const h of hist) { if (!byStory.has(h.storyId)) byStory.set(h.storyId, []); byStory.get(h.storyId).push(h); }
-  const analyzed = stories.map((s) => analyzeStory(s, byStory.get(s.id) || []));
-  const done = analyzed.filter((a) => a.storyStatus === "Done");
-  const score = done.reduce((sum, a) => sum + (a.storyPoints ?? a.effortPoints), 0);
-  return { json: {
-    displayName: u.displayName, role: u.role,
-    projects, storiesDone: done.length, storiesTotal: stories.length, score,
-  } };
-}, { public: true });
 
 // --- effort analytics & scoreboard
 route("GET", "/api/analytics", (req) => ({ json: computeAnalytics(req.user, req.query.projectId) }));

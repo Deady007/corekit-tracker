@@ -1,0 +1,35 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#242424"/>
+      <stop offset="1" stop-color="#141414"/>
+    </linearGradient>
+    <linearGradient id="tbar" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FF9433"/>
+      <stop offset="1" stop-color="#FF7A00"/>
+    </linearGradient>
+    <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+    <filter id="soft-sm" x="-60%" y="-60%" width="220%" height="220%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#000000" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" rx="120" fill="url(#bg)"/>
+  <!-- subtle inner highlight for a soft-extruded neomorphic feel -->
+  <rect x="10" y="10" width="492" height="492" rx="112" fill="none" stroke="#FFFFFF" stroke-opacity="0.05" stroke-width="2"/>
+
+  <!-- T monogram, rounded terminals -->
+  <g filter="url(#soft)">
+    <rect x="118" y="146" width="276" height="60" rx="30" fill="url(#tbar)"/>
+    <rect x="226" y="146" width="60" height="236" rx="30" fill="url(#tbar)"/>
+  </g>
+
+  <!-- task-complete badge -->
+  <g filter="url(#soft-sm)">
+    <circle cx="378" cy="378" r="50" fill="#FFFFFF"/>
+    <circle cx="378" cy="378" r="50" fill="none" stroke="#FF7A00" stroke-opacity="0.12" stroke-width="3"/>
+    <path d="M356 379l16 16 32 -36" stroke="#FF7A00" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
+</svg>

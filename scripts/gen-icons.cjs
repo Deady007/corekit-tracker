@@ -1,6 +1,9 @@
 // Generates PWA icons (icon-192/512, apple-touch-icon) with zero dependencies:
 // raw RGB pixels → minimal PNG encoder (zlib + hand-rolled CRC32).
-// Design: brutalist block mark — ink field, yellow plate, blocky CK glyphs.
+// Design: black field, orange "T" monogram with rounded terminals, white
+// tick-in-circle badge — smooth/rounded, not blocky (the richer gradient +
+// soft-shadow version lives in public/logo.svg; this raw RGB encoder has no
+// alpha channel so shadows/gradients aren't practical at favicon sizes).
 const { deflateSync } = require("node:zlib");
 const { writeFileSync } = require("node:fs");
 const { join } = require("node:path");
@@ -24,13 +27,42 @@ const chunk = (type, data) => {
 
 function png(size, draw) {
   const px = Buffer.alloc(size * size * 3);
+  // NOTE: coordinates are rounded to integers before use — Buffer/typed-array
+  // writes to a fractional index are silently dropped (no error, no pixel).
   const fill = (x, y, w, h, [r, g, b]) => {
-    for (let yy = Math.max(0, y); yy < Math.min(size, y + h); yy++)
-      for (let xx = Math.max(0, x); xx < Math.min(size, x + w); xx++) {
+    const x0 = Math.round(x), y0 = Math.round(y), x1 = Math.round(x + w), y1 = Math.round(y + h);
+    for (let yy = Math.max(0, y0); yy < Math.min(size, y1); yy++)
+      for (let xx = Math.max(0, x0); xx < Math.min(size, x1); xx++) {
         const i = (yy * size + xx) * 3; px[i] = r; px[i + 1] = g; px[i + 2] = b;
       }
   };
-  draw(fill, size);
+  const circle = (cx, cy, r, [rr, g, b]) => {
+    cx = Math.round(cx); cy = Math.round(cy); r = Math.round(r);
+    for (let yy = Math.max(0, cy - r); yy < Math.min(size, cy + r + 1); yy++)
+      for (let xx = Math.max(0, cx - r); xx < Math.min(size, cx + r + 1); xx++) {
+        if ((xx - cx) ** 2 + (yy - cy) ** 2 > r * r) continue;
+        const i = (yy * size + xx) * 3; px[i] = rr; px[i + 1] = g; px[i + 2] = b;
+      }
+  };
+  // rounded rect = cross of two overlapping fills + 4 corner circles
+  const roundedRect = (x, y, w, h, r, color) => {
+    fill(x + r, y, w - 2 * r, h, color);
+    fill(x, y + r, w, h - 2 * r, color);
+    circle(x + r, y + r, r, color);
+    circle(x + w - r, y + r, r, color);
+    circle(x + r, y + h - r, r, color);
+    circle(x + w - r, y + h - r, r, color);
+  };
+  // thick smooth line: overlapping circles along each segment (no blocky steps)
+  const strokeLine = (x0, y0, x1, y1, width, color) => {
+    const dist = Math.hypot(x1 - x0, y1 - y0);
+    const steps = Math.max(1, Math.ceil(dist / (width / 3)));
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      circle(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, width / 2, color);
+    }
+  };
+  draw(fill, circle, roundedRect, strokeLine, size);
   const raw = Buffer.alloc(size * (size * 3 + 1));
   for (let y = 0; y < size; y++) {
     raw[y * (size * 3 + 1)] = 0;
@@ -47,28 +79,18 @@ function png(size, draw) {
   ]);
 }
 
-const INK = [20, 20, 20], YELLOW = [255, 217, 0], PAPER = [242, 239, 232];
+const INK = [26, 26, 26], ORANGE = [255, 122, 0], WHITE = [255, 255, 255];
 
-const draw = (f, S) => {
+const draw = (f, c, rr, stroke, S) => {
   const u = S / 64; // 64-unit design grid
-  f(0, 0, S, S, INK);                                   // ink field
-  f(6 * u, 6 * u, 48 * u, 48 * u, YELLOW);              // yellow plate (offset = shadow feel)
-  f(6 * u, 6 * u, 48 * u, 3 * u, INK);                  // plate border top
-  f(6 * u, 51 * u, 48 * u, 3 * u, INK);                 // bottom
-  f(6 * u, 6 * u, 3 * u, 48 * u, INK);                  // left
-  f(51 * u, 6 * u, 3 * u, 48 * u, INK);                 // right
-  // C
-  f(14 * u, 18 * u, 6 * u, 24 * u, INK);
-  f(14 * u, 18 * u, 14 * u, 6 * u, INK);
-  f(14 * u, 36 * u, 14 * u, 6 * u, INK);
-  // K
-  f(32 * u, 18 * u, 6 * u, 24 * u, INK);
-  for (let i = 0; i < 4; i++) {                         // stepped arms
-    f((38 + i * 2) * u, (27 - i * 3) * u, 4 * u, 4 * u, INK);   // upper
-    f((38 + i * 2) * u, (30 + i * 3) * u, 4 * u, 4 * u, INK);   // lower
-  }
-  // paper tick, bottom-right — the "tracker" dot
-  f(44 * u, 44 * u, 5 * u, 5 * u, PAPER);
+  f(0, 0, S, S, INK);                                          // ink field
+  // T monogram — rounded terminals, not square-cut
+  rr(15 * u, 17.5 * u, 34 * u, 7 * u, 3.5 * u, ORANGE);         // top bar
+  rr(28.5 * u, 17.5 * u, 7 * u, 29 * u, 3.5 * u, ORANGE);       // stem
+  // task-complete badge, bottom-right — smooth circular checkmark
+  c(47 * u, 47 * u, 8 * u, WHITE);
+  stroke(44 * u, 47.5 * u, 46.5 * u, 50 * u, 1.7 * u, ORANGE);  // check: short leg
+  stroke(46.5 * u, 50 * u, 51 * u, 43.5 * u, 1.7 * u, ORANGE);  // check: long leg
 };
 
 const out = join(__dirname, "..", "public");

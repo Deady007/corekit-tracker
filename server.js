@@ -935,6 +935,7 @@ const server = createServer(async (req, res) => {
       "/icon-192.png": "image/png",
       "/icon-512.png": "image/png",
       "/apple-touch-icon.png": "image/png",
+      "/logo.svg": "image/svg+xml",
     };
     if (STATIC[url.pathname]) {
       res.writeHead(200, { "Content-Type": STATIC[url.pathname], "Cache-Control": "public, max-age=3600" });

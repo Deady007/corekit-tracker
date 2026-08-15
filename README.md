@@ -1,6 +1,6 @@
-# CoreKit Tracker
+# Trivyah Task Manager
 
-Lightweight project management for Trivyah Tech — projects, stories/issues/bugs, kanban board, role-aware dashboards, file attachments, and notifications, in a brutalist UI. **Zero npm dependencies**: one Node process, one SQLite file (built-in `node:sqlite`), no build step.
+Lightweight project management for Trivyah Tech — projects, stories/issues/bugs, kanban board, role-aware dashboards, file attachments, and notifications, in a clean Notion-style UI. **Zero npm dependencies**: one Node process, one SQLite file (built-in `node:sqlite`), no build step.
 
 ## Roles & visibility
 

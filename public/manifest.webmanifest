@@ -1,6 +1,6 @@
 {
-  "name": "CoreKit Tracker",
-  "short_name": "CoreKit",
+  "name": "Trivyah Task Manager",
+  "short_name": "Trivyah",
   "description": "Projects, issues and kanban — Trivyah Tech",
   "start_url": "/",
   "display": "standalone",

@@ -17,6 +17,10 @@ Environment=COREKIT_PORT=4580
 Environment=COREKIT_SECURE_COOKIES=1
 Environment=COREKIT_TRUST_PROXY=1
 
+; SMTP + other secrets (COREKIT_SMTP_HOST/PORT/USER/PASS/FROM, COREKIT_PUBLIC_URL)
+; live in this file, root-owned, never in git — see deploy/smtp.env.example
+EnvironmentFile=-/etc/corekit.env
+
 ; hardening
 NoNewPrivileges=true
 ProtectSystem=strict

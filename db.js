@@ -134,4 +134,48 @@ try {
 try { db.exec("ALTER TABLE projects ADD COLUMN category TEXT NOT NULL DEFAULT 'client'"); } catch {}
 try { db.exec("ALTER TABLE projects ADD COLUMN targetDate TEXT"); } catch {}
 
+// migration: client info + shareable showcase links
+try { db.exec("ALTER TABLE projects ADD COLUMN clientName TEXT"); } catch {}
+try { db.exec("ALTER TABLE projects ADD COLUMN clientContactName TEXT"); } catch {}
+try { db.exec("ALTER TABLE projects ADD COLUMN clientPhone TEXT"); } catch {}
+try { db.exec("ALTER TABLE projects ADD COLUMN clientEmail TEXT"); } catch {}
+try { db.exec("ALTER TABLE projects ADD COLUMN shareToken TEXT"); } catch {}
+try { db.exec("ALTER TABLE users ADD COLUMN shareToken TEXT"); } catch {}
+try { db.exec("CREATE UNIQUE INDEX idx_projects_share ON projects(shareToken) WHERE shareToken IS NOT NULL"); } catch {}
+try { db.exec("CREATE UNIQUE INDEX idx_users_share ON users(shareToken) WHERE shareToken IS NOT NULL"); } catch {}
+
+db.exec(`
+CREATE TABLE IF NOT EXISTS project_files (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  projectId INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  filename TEXT NOT NULL,
+  mime TEXT DEFAULT 'application/octet-stream',
+  size INTEGER NOT NULL,
+  path TEXT NOT NULL,
+  kind TEXT NOT NULL DEFAULT 'document', -- document | image | video
+  uploadedById INTEGER REFERENCES users(id),
+  createdDate TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_project_files_project ON project_files(projectId);
+
+CREATE TABLE IF NOT EXISTS page_access (
+  page TEXT PRIMARY KEY,
+  roles TEXT NOT NULL -- comma-separated: USER,DEV,DEVLEAD,ADMIN
+);
+`);
+
+// migration: seed default RBAC page access (idempotent — only fills missing rows)
+const DEFAULT_PAGE_ACCESS = {
+  dashboard: "USER,DEV,DEVLEAD,ADMIN",
+  command: "DEVLEAD,ADMIN",
+  products: "USER,DEV,DEVLEAD,ADMIN",
+  clients: "USER,DEV,DEVLEAD,ADMIN",
+  internal: "USER,DEV,DEVLEAD,ADMIN",
+  team: "ADMIN",
+};
+{
+  const insertPage = db.prepare("INSERT OR IGNORE INTO page_access (page, roles) VALUES (?,?)");
+  for (const [page, roles] of Object.entries(DEFAULT_PAGE_ACCESS)) insertPage.run(page, roles);
+}
+
 export const now = () => new Date().toISOString();

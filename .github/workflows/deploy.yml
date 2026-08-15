@@ -1,0 +1,40 @@
+name: Deploy to Lightsail
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.LIGHTSAIL_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.LIGHTSAIL_HOST }}" >> ~/.ssh/known_hosts
+
+      # data/ (DB + uploaded files + admin password) is never touched by deploys.
+      # .env files, .git, and node_modules are excluded too.
+      - name: Sync files to server
+        run: |
+          rsync -az --delete \
+            --exclude='.git' --exclude='.github' --exclude='data' \
+            --exclude='node_modules' --exclude='*.env' \
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes" \
+            ./ "${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }}:/opt/corekit/"
+
+      - name: Fix ownership and restart service
+        run: |
+          ssh -i ~/.ssh/deploy_key "${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }}" '
+            set -e
+            sudo chown -R corekit:corekit /opt/corekit
+            sudo chmod +x /opt/corekit/deploy/backup.sh
+            sudo systemctl restart corekit
+            sleep 1
+            sudo systemctl is-active corekit
+          '

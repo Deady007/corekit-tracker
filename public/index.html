@@ -3,130 +3,133 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CoreKit Tracker</title>
-<meta name="theme-color" content="#141414">
+<title>Trivyah Task Manager</title>
+<meta name="theme-color" content="#37352F">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" type="image/png" href="/icon-192.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..900&family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-/* ============ BRUTALIST SYSTEM ============
-   raw paper, hard 3px ink borders, offset block shadows, zero radius,
-   construction-sign accents. Nothing floats; everything is nailed down. */
+/* ============ NOTION-STYLE SYSTEM ============
+   clean paper, soft 1px hairline borders, subtle shadows, rounded corners.
+   calm and legible — content first, chrome second. */
 :root{
-  --paper:#F2EFE8; --paper2:#E9E5DB; --ink:#141414; --dim:#54504a;
-  --yellow:#FFD900; --red:#E63B2E; --blue:#2733E6; --green:#00A651; --white:#FFFFFF;
-  --bd:3px solid var(--ink); --shadow:6px 6px 0 var(--ink); --shadow-sm:4px 4px 0 var(--ink);
-  --mono:'IBM Plex Mono',ui-monospace,monospace; --sans:'Archivo',system-ui,sans-serif;
+  --paper:#FFFFFF; --paper2:#F7F6F3; --ink:#37352F; --dim:#787774;
+  --yellow:#FDECC8; --red:#EB5757; --blue:#2F80ED; --green:#2E9E5B; --white:#FFFFFF;
+  --line:#E9E8E4; --accent:#2F80ED;
+  --bd:1px solid var(--line); --shadow:0 1px 2px rgba(15,15,15,.05),0 2px 6px rgba(15,15,15,.04); --shadow-sm:0 1px 2px rgba(15,15,15,.06);
+  --radius:8px;
+  --mono:'IBM Plex Mono',ui-monospace,monospace; --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{background:var(--paper)}
-body{font-family:var(--sans);color:var(--ink);font-size:14px;line-height:1.45}
+body{font-family:var(--sans);color:var(--ink);font-size:14px;line-height:1.5}
 .mono{font-family:var(--mono)}
-h1,h2,h3,h4{font-variation-settings:'wdth' 122;text-transform:uppercase;letter-spacing:.01em}
+h1,h2,h3,h4{font-weight:700;letter-spacing:-.01em}
 
-button{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
-  background:var(--white);color:var(--ink);border:var(--bd);padding:9px 14px;cursor:pointer;box-shadow:var(--shadow-sm);border-radius:0}
-button:hover{background:var(--yellow)}
-button:active{transform:translate(4px,4px);box-shadow:none}
-button.primary{background:var(--yellow)}
+button{font-family:var(--sans);font-size:13px;font-weight:600;letter-spacing:0;text-transform:none;
+  background:var(--white);color:var(--ink);border:var(--bd);padding:8px 14px;cursor:pointer;box-shadow:var(--shadow-sm);border-radius:var(--radius);transition:background .1s,transform .1s}
+button:hover{background:var(--paper2)}
+button:active{transform:scale(.98)}
+button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+button.primary:hover{background:#2568c9}
 button.danger{background:var(--white);color:var(--red)}
-button.bare{box-shadow:none;border:2px solid var(--ink);padding:5px 9px}
-button.bare:active{transform:translate(1px,1px)}
-button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--blue);outline-offset:1px}
-input,select,textarea{font-family:var(--mono);font-size:13px;background:var(--white);color:var(--ink);
-  border:var(--bd);border-radius:0;padding:9px 10px;width:100%}
+button.bare{box-shadow:none;border:1px solid var(--line);padding:5px 10px;font-weight:500}
+button.bare:active{transform:scale(.97)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+input,select,textarea{font-family:var(--sans);font-size:13.5px;background:var(--white);color:var(--ink);
+  border:var(--bd);border-radius:6px;padding:9px 10px;width:100%}
 textarea{min-height:90px;resize:vertical;font-family:var(--sans)}
-label{display:block;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;margin:14px 0 5px}
-::placeholder{color:#9a948a}
+label{display:block;font-family:var(--sans);font-size:11.5px;font-weight:600;letter-spacing:.01em;text-transform:none;color:var(--dim);margin:14px 0 5px}
+::placeholder{color:#b0aea8}
 
 /* ---- shell: sidebar + main ---- */
 .shell{display:grid;grid-template-columns:230px 1fr;min-height:100vh}
-aside{background:var(--ink);color:var(--paper);display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
-aside .logo{padding:22px 18px;border-bottom:3px solid var(--paper)}
-aside .logo .big{font-variation-settings:'wdth' 125;font-weight:900;font-size:26px;letter-spacing:.01em;line-height:.95}
-aside .logo .big b{color:var(--yellow)}
-aside .logo .tag{font-family:var(--mono);font-size:9px;letter-spacing:.28em;margin-top:6px;color:#8f8a80;text-transform:uppercase}
-aside nav{padding:14px 0;display:flex;flex-direction:column}
-aside nav a{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
-  color:var(--paper);text-decoration:none;padding:11px 18px;border-left:6px solid transparent}
-aside nav a:hover{background:#242424}
-aside nav a.on{background:var(--yellow);color:var(--ink);border-left-color:var(--red)}
-aside .plist{flex:1;overflow-y:auto;border-top:2px solid #333;padding:12px 0}
-aside .plist .pl-h{font-family:var(--mono);font-size:9px;letter-spacing:.26em;color:#8f8a80;padding:0 18px 8px;text-transform:uppercase}
-aside .plist a{display:flex;gap:9px;align-items:baseline;color:var(--paper);text-decoration:none;font-size:12.5px;padding:6px 18px}
-aside .plist a:hover{background:#242424}
-aside .plist a .k{font-family:var(--mono);font-size:10px;color:var(--yellow);min-width:36px}
-aside .who{border-top:3px solid var(--paper);padding:14px 18px}
-aside .who .nm{font-weight:700;font-size:13px}
-aside .who .rl{font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;color:var(--yellow)}
-aside .who button{margin-top:10px;width:100%;background:var(--ink);color:var(--paper);border-color:var(--paper);box-shadow:3px 3px 0 var(--paper)}
-aside .who button:hover{background:var(--red);border-color:var(--paper)}
+aside{background:var(--paper2);color:var(--ink);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;border-right:1px solid var(--line)}
+aside .logo{padding:18px 14px 14px}
+aside .logo .big{font-weight:700;font-size:16px;letter-spacing:-.01em;line-height:1.1}
+aside .logo .big b{color:var(--accent);font-weight:700}
+aside .logo .tag{font-family:var(--sans);font-size:11px;margin-top:3px;color:var(--dim)}
+aside nav{padding:4px 8px;display:flex;flex-direction:column}
+aside nav a{font-family:var(--sans);font-size:13.5px;font-weight:500;letter-spacing:0;text-transform:none;
+  color:#4a4844;text-decoration:none;padding:6px 10px;border-left:none;border-radius:6px}
+aside nav a:hover{background:rgba(55,53,47,.06)}
+aside nav a.on{background:rgba(55,53,47,.08);color:var(--ink);font-weight:600}
+aside .plist{flex:1;overflow-y:auto;padding:10px 8px}
+aside .plist .pl-h{font-family:var(--sans);font-size:11px;letter-spacing:0;color:#9a968f;padding:8px 10px 4px;text-transform:none;font-weight:600}
+aside .plist a{display:flex;gap:8px;align-items:baseline;color:#5b5852;text-decoration:none;font-size:12.5px;padding:5px 10px;border-radius:6px}
+aside .plist a:hover{background:rgba(55,53,47,.06);color:var(--ink)}
+aside .plist a .k{font-family:var(--mono);font-size:10px;color:#a09c94;min-width:34px}
+aside .who{border-top:1px solid var(--line);padding:12px 14px}
+aside .who .nm{font-weight:600;font-size:13px;color:var(--ink)}
+aside .who .rl{font-family:var(--sans);font-size:11px;color:var(--dim)}
+aside .who button{margin-top:10px;width:100%;background:var(--white);color:var(--ink);border-color:var(--line);box-shadow:none}
+aside .who button:hover{background:var(--paper2)}
 
 .mainwrap{min-width:0}
 .topbar{display:flex;align-items:center;gap:14px;padding:16px 26px;border-bottom:var(--bd);background:var(--paper);position:sticky;top:0;z-index:30}
-.topbar h1{font-size:22px;font-weight:850}
+.topbar h1{font-size:20px;font-weight:700}
 .topbar .sub{font-family:var(--mono);font-size:11px;color:var(--dim)}
 .topbar .sp{flex:1}
 .bellwrap{position:relative}
-.bell .dot{position:absolute;top:-8px;right:-8px;background:var(--red);color:#fff;border:2px solid var(--ink);font-size:10px;font-weight:700;padding:1px 6px}
-.ndrop{position:absolute;top:110%;right:0;width:380px;background:var(--white);border:var(--bd);box-shadow:var(--shadow);z-index:60;display:none;max-height:60vh;overflow-y:auto}
+.bell .dot{position:absolute;top:-6px;right:-6px;background:var(--red);color:#fff;border:2px solid var(--white);border-radius:99px;font-size:10px;font-weight:700;padding:1px 6px}
+.ndrop{position:absolute;top:110%;right:0;width:380px;background:var(--white);border:var(--bd);box-shadow:var(--shadow);z-index:60;display:none;max-height:60vh;overflow-y:auto;border-radius:var(--radius)}
 .ndrop.open{display:block}
-.ndrop .nitem{padding:10px 14px;border-bottom:2px solid var(--paper2);font-size:12.5px;cursor:pointer}
-.ndrop .nitem:hover{background:var(--paper)}
-.ndrop .nitem.unread{border-left:6px solid var(--yellow)}
+.ndrop .nitem{padding:10px 14px;border-bottom:1px solid var(--paper2);font-size:12.5px;cursor:pointer}
+.ndrop .nitem:hover{background:var(--paper2)}
+.ndrop .nitem.unread{border-left:3px solid var(--accent)}
 .ndrop .nitem .nt{font-family:var(--mono);font-size:9.5px;color:var(--dim);margin-top:2px}
 main{padding:24px 26px 90px}
 
 /* ---- tiles ---- */
-.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px;margin-bottom:22px}
-.tile{background:var(--white);border:var(--bd);box-shadow:var(--shadow);padding:14px 16px 12px;position:relative}
-.tile .n{font-variation-settings:'wdth' 122;font-weight:900;font-size:34px;line-height:1}
-.tile .t{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;margin-top:6px}
-.tile .s{font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:2px}
-.tile.warn{background:var(--red);color:#fff}
-.tile.warn .s{color:#ffd7d3}
-.tile.go{background:var(--green);color:#fff}
-.tile.go .s{color:#c9f5dd}
-.tile.hot{background:var(--yellow)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:22px}
+.tile{background:var(--white);border:var(--bd);box-shadow:var(--shadow);padding:14px 16px 12px;position:relative;border-radius:var(--radius)}
+.tile .n{font-weight:800;font-size:30px;line-height:1}
+.tile .t{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.02em;text-transform:none;color:var(--dim);margin-top:6px}
+.tile .s{font-family:var(--sans);font-size:11px;color:var(--dim);margin-top:2px}
+.tile.warn{background:#FDEDEC;border-color:#F5C6C4}
+.tile.warn .n,.tile.warn .t{color:#C0392B}
+.tile.go{background:#E9F7EF;border-color:#BEE5CD}
+.tile.go .n,.tile.go .t{color:#1E8449}
+.tile.hot{background:#FFF7E0;border-color:#F5E3A8}
 
 /* ---- blocks & tables ---- */
-.block{background:var(--white);border:var(--bd);box-shadow:var(--shadow);margin-bottom:22px}
-.block .bhead{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 16px;border-bottom:var(--bd);background:var(--ink);color:var(--paper)}
-.block .bhead h2{font-size:13px;font-weight:800;letter-spacing:.12em}
-.block .bhead .note{font-family:var(--mono);font-size:10px;color:#a8a297}
+.block{background:var(--white);border:var(--bd);box-shadow:var(--shadow);margin-bottom:22px;border-radius:var(--radius);overflow:hidden}
+.block .bhead{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 16px;border-bottom:var(--bd);background:var(--paper2)}
+.block .bhead h2{font-size:13.5px;font-weight:700;letter-spacing:0;color:var(--ink)}
+.block .bhead .note{font-family:var(--sans);font-size:11px;color:var(--dim)}
 .block .bpad{padding:16px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}
 @media(max-width:1100px){.grid2{grid-template-columns:1fr}}
 table{border-collapse:collapse;width:100%}
-th,td{padding:9px 14px;text-align:left;border-bottom:2px solid var(--paper2);font-size:13px}
-th{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;background:var(--paper2)}
+th,td{padding:9px 14px;text-align:left;border-bottom:1px solid var(--paper2);font-size:13px}
+th{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.02em;text-transform:none;background:var(--paper2);color:var(--dim)}
 td.mono{font-size:11.5px}
-.stamp{display:inline-block;font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
-  border:2px solid var(--ink);padding:2px 7px;background:var(--white)}
-.stamp.High{background:var(--red);color:#fff}
-.stamp.Medium{background:var(--yellow)}
-.stamp.Low{background:var(--paper2)}
-.stamp.Done{background:var(--green);color:#fff}
-.stamp.Backlog{background:var(--white)}
-.stamp.InProgress{background:var(--yellow)}
-.stamp.InReview{background:var(--blue);color:#fff}
-.stamp.Bug{background:var(--red);color:#fff}
-.stamp.Issue{background:var(--blue);color:#fff}
-.stamp.Story{background:var(--white)}
-.late{color:var(--red);font-family:var(--mono);font-weight:700;font-size:11px}
-.empty{color:var(--dim);font-family:var(--mono);font-size:12px;padding:22px;text-align:center;text-transform:uppercase;letter-spacing:.1em}
+.stamp{display:inline-block;font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:0;text-transform:none;
+  border:1px solid var(--line);border-radius:5px;padding:2px 8px;background:var(--paper2);color:var(--ink)}
+.stamp.High{background:#FDECEB;color:#C0392B;border-color:#F5C6C4}
+.stamp.Medium{background:#FFF7E0;color:#8A6D1D;border-color:#F5E3A8}
+.stamp.Low{background:var(--paper2);color:var(--dim)}
+.stamp.Done{background:#E9F7EF;color:#1E8449;border-color:#BEE5CD}
+.stamp.Backlog{background:var(--paper2);color:var(--dim)}
+.stamp.InProgress{background:#FFF7E0;color:#8A6D1D;border-color:#F5E3A8}
+.stamp.InReview{background:#EAF2FE;color:#1D5BB8;border-color:#C9DFFA}
+.stamp.Bug{background:#FDECEB;color:#C0392B;border-color:#F5C6C4}
+.stamp.Issue{background:#EAF2FE;color:#1D5BB8;border-color:#C9DFFA}
+.stamp.Story{background:var(--paper2);color:var(--dim)}
+.late{color:var(--red);font-family:var(--sans);font-weight:600;font-size:11.5px}
+.empty{color:var(--dim);font-family:var(--sans);font-size:13px;padding:22px;text-align:center;text-transform:none;letter-spacing:0}
 
 /* ---- projects grid ---- */
-.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px}
-.pcard{background:var(--white);border:var(--bd);box-shadow:var(--shadow);padding:16px;cursor:pointer}
-.pcard:hover{background:var(--yellow)}
-.pcard:active{transform:translate(4px,4px);box-shadow:none}
-.pcard .key{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.14em;background:var(--ink);color:var(--paper);display:inline-block;padding:2px 8px}
-.pcard h3{font-size:17px;font-weight:800;margin:8px 0 3px}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.pcard{background:var(--white);border:var(--bd);box-shadow:var(--shadow);padding:16px;cursor:pointer;border-radius:var(--radius);transition:box-shadow .12s,transform .12s}
+.pcard:hover{box-shadow:0 4px 14px rgba(15,15,15,.08);transform:translateY(-1px)}
+.pcard:active{transform:translateY(0) scale(.995)}
+.pcard .key{font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.04em;background:var(--paper2);color:var(--dim);display:inline-block;padding:2px 8px;border-radius:5px}
+.pcard h3{font-size:16px;font-weight:700;margin:8px 0 3px}
 .pcard .desc{color:var(--dim);font-size:12.5px;min-height:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pcard .foot{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
 
@@ -134,134 +137,114 @@ td.mono{font-size:11.5px}
 .board-head{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
 .board-head select,.board-head input{width:auto}
 .board-head input[type=search]{width:220px}
-.fchip{font-family:var(--mono);font-size:10.5px;font-weight:700;padding:6px 11px;border:2px solid var(--ink);background:var(--white);cursor:pointer;letter-spacing:.08em;text-transform:uppercase;box-shadow:none}
-.fchip.on{background:var(--ink);color:var(--yellow)}
-.kanban{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;align-items:start}
+.fchip{font-family:var(--sans);font-size:12.5px;font-weight:500;padding:6px 12px;border:1px solid var(--line);background:var(--white);cursor:pointer;letter-spacing:0;text-transform:none;box-shadow:none;border-radius:99px}
+.fchip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.kanban{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;align-items:start}
 @media(max-width:1050px){.kanban{grid-template-columns:repeat(2,1fr)}}
-.kcol{border:var(--bd);background:var(--paper2);box-shadow:var(--shadow)}
-.kcol.dragover{outline:4px dashed var(--blue);outline-offset:-6px}
-.kcol .khead{display:flex;justify-content:space-between;align-items:center;padding:9px 12px;background:var(--ink);color:var(--paper);border-bottom:var(--bd)}
-.kcol .khead h4{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.16em}
-.kcol .khead .cnt{font-family:var(--mono);font-size:11px;font-weight:700;background:var(--kc);color:var(--ink);padding:0 8px;border:2px solid var(--paper)}
+.kcol{border:var(--bd);background:var(--paper2);box-shadow:var(--shadow);border-radius:var(--radius);overflow:hidden}
+.kcol.dragover{outline:2px dashed var(--accent);outline-offset:-6px}
+.kcol .khead{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--white);color:var(--ink);border-bottom:var(--bd)}
+.kcol .khead h4{font-family:var(--sans);font-size:12.5px;font-weight:700;letter-spacing:0}
+.kcol .khead .cnt{font-family:var(--sans);font-size:11px;font-weight:700;background:var(--kc);color:var(--ink);padding:1px 8px;border-radius:99px}
 .kcol[data-status="In Review"] .khead .cnt{color:#fff}
 .kcol[data-status="Done"] .khead .cnt{color:#fff}
-.klist{padding:12px;display:flex;flex-direction:column;gap:12px;min-height:70px}
-.card{background:var(--white);border:var(--bd);padding:10px 12px;cursor:grab;box-shadow:var(--shadow-sm)}
-.card:hover{background:#FFFBE6}
+.klist{padding:10px;display:flex;flex-direction:column;gap:10px;min-height:70px}
+.card{background:var(--white);border:var(--bd);padding:10px 12px;cursor:grab;box-shadow:var(--shadow-sm);border-radius:6px}
+.card:hover{box-shadow:0 3px 10px rgba(15,15,15,.08)}
 .card:active{cursor:grabbing}
 .card.dragging{opacity:.35}
-.card .top{display:flex;justify-content:space-between;gap:8px;font-family:var(--mono);font-size:10px;font-weight:700}
-.card .num{letter-spacing:.1em}
+.card .top{display:flex;justify-content:space-between;gap:8px;font-family:var(--mono);font-size:10px;font-weight:700;color:var(--dim)}
+.card .num{letter-spacing:.03em}
 .card .nm{font-size:13.5px;font-weight:600;margin:6px 0 8px;line-height:1.3}
 .card .bot{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.card .meta{font-family:var(--mono);font-size:9.5px;color:var(--dim);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.card .who{width:24px;height:24px;background:var(--ink);color:var(--yellow);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:9px;font-weight:700}
+.card .meta{font-family:var(--sans);font-size:11px;color:var(--dim);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.card .who{width:22px;height:22px;border-radius:99px;background:var(--paper2);color:var(--ink);display:flex;align-items:center;justify-content:center;font-family:var(--sans);font-size:9.5px;font-weight:700}
 
 /* ---- drawer & modal ---- */
-.overlay{position:fixed;inset:0;background:rgba(20,20,20,.45);z-index:50;display:none}
+.overlay{position:fixed;inset:0;background:rgba(15,15,15,.4);z-index:50;display:none}
 .overlay.open{display:block}
 .drawer{position:fixed;top:0;right:0;bottom:0;width:560px;max-width:96vw;background:var(--paper);border-left:var(--bd);z-index:51;
-  transform:translateX(102%);transition:transform .15s ease;display:flex;flex-direction:column}
+  transform:translateX(102%);transition:transform .15s ease;display:flex;flex-direction:column;box-shadow:-8px 0 24px rgba(15,15,15,.08)}
 .drawer.open{transform:none}
-.drawer .dhead{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:var(--ink);color:var(--paper)}
-.drawer .dhead .num{font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.12em;color:var(--yellow)}
-.drawer .dbody{padding:2px 18px 18px;overflow-y:auto;flex:1;
-  background:repeating-linear-gradient(-45deg,var(--paper) 0 26px,var(--paper2) 26px 30px)}
+.drawer .dhead{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:var(--paper2);color:var(--ink);border-bottom:var(--bd)}
+.drawer .dhead .num{font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:0;color:var(--dim)}
+.drawer .dbody{padding:2px 18px 18px;overflow-y:auto;flex:1;background:var(--paper)}
 .drawer .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .drawer .dfoot{padding:12px 18px;border-top:var(--bd);display:flex;gap:10px;justify-content:space-between;background:var(--paper2)}
-.drawer .dhead .stamp{border-color:var(--paper);color:var(--ink)}
-.drawer .dhead .stamp.Done,.drawer .dhead .stamp.InReview,.drawer .dhead .stamp.Bug,.drawer .dhead .stamp.Issue{color:#fff}
-/* drawer section plates — each part of the ticket is its own nailed-down block */
-.dsec{background:var(--white);border:var(--bd);box-shadow:var(--shadow-sm);margin:16px 0}
-.dsec-h{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 12px;
-  background:var(--ink);color:var(--paper);font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.22em;text-transform:uppercase}
-.dsec-h .sq{display:inline-block;width:9px;height:9px;border:2px solid var(--paper);margin-right:9px;vertical-align:-1px;background:var(--sc,var(--yellow))}
-.dsec-h .n{color:var(--yellow);letter-spacing:.08em}
-.dsec-b{padding:0 14px 14px}
+.drawer .dhead .stamp{border-color:var(--line);color:var(--ink)}
+/* drawer section plates */
+.dsec{background:var(--white);border:var(--bd);box-shadow:var(--shadow-sm);margin:14px 0;border-radius:var(--radius);overflow:hidden}
+.dsec-h{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 12px;
+  background:var(--paper2);color:var(--ink);font-family:var(--sans);font-size:12px;font-weight:700;letter-spacing:0;text-transform:none}
+.dsec-h .sq{display:inline-block;width:8px;height:8px;border-radius:99px;margin-right:9px;vertical-align:-1px;background:var(--sc,var(--accent))}
+.dsec-h .n{color:var(--dim);letter-spacing:0;font-weight:500}
+.dsec-b{padding:2px 14px 14px}
 .dsec-b>label:first-child,.dsec-b .row2>div>label{margin-top:12px}
-.comment{padding:9px 0;border-bottom:2px solid var(--paper2)}
-.comment .ch{font-family:var(--mono);font-size:10px;color:var(--dim)}
+.comment{padding:9px 0;border-bottom:1px solid var(--paper2)}
+.comment .ch{font-family:var(--sans);font-size:11.5px;color:var(--dim)}
 .comment .ch b{color:var(--ink)}
 .comment p{font-size:13px;margin-top:2px}
-.comment img{max-width:100%;max-height:220px;border:var(--bd);margin-top:6px;display:block;cursor:zoom-in}
-.pending-img{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:10.5px;background:var(--yellow);border:2px solid var(--ink);padding:4px 8px;margin-top:8px}
-.hist-row{display:flex;gap:10px;padding:6px 0;border-bottom:2px solid var(--paper2);font-size:12px;align-items:baseline}
+.comment img{max-width:100%;max-height:220px;border:var(--bd);border-radius:6px;margin-top:6px;display:block;cursor:zoom-in}
+.pending-img{display:flex;align-items:center;gap:8px;font-family:var(--sans);font-size:11.5px;background:var(--yellow);border-radius:6px;border:1px solid #F5E3A8;padding:4px 8px;margin-top:8px}
+.hist-row{display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--paper2);font-size:12px;align-items:baseline}
 .hist-row .ht{font-family:var(--mono);font-size:9.5px;color:var(--dim);min-width:86px}
 .hist-row b{font-weight:700}
-.hist-row .arrow{font-family:var(--mono);color:var(--dim)}
-.file-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:2px solid var(--paper2);font-size:12.5px}
-.file-row a{color:var(--blue);font-weight:600;text-decoration:none;border-bottom:2px solid var(--blue)}
-.file-row .fs{font-family:var(--mono);font-size:10px;color:var(--dim)}
+.hist-row .arrow{font-family:var(--sans);color:var(--dim)}
+.file-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--paper2);font-size:12.5px}
+.file-row a{color:var(--accent);font-weight:600;text-decoration:none}
+.file-row a:hover{text-decoration:underline}
+.file-row .fs{font-family:var(--sans);font-size:11px;color:var(--dim)}
 .file-row .sp{flex:1}
 .modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-46%);width:500px;max-width:94vw;background:var(--paper);
-  border:var(--bd);box-shadow:10px 10px 0 var(--ink);z-index:52;display:none}
+  border:var(--bd);box-shadow:0 12px 32px rgba(15,15,15,.18);z-index:52;display:none;border-radius:12px;overflow:hidden}
 .modal.open{display:block}
-.modal .mhead{padding:12px 18px;background:var(--ink);color:var(--yellow);font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase}
+.modal .mhead{padding:14px 18px;background:var(--paper2);color:var(--ink);font-family:var(--sans);font-size:14px;font-weight:700;letter-spacing:0;text-transform:none;border-bottom:var(--bd)}
 .modal .mbody{padding:6px 18px 18px;max-height:70vh;overflow-y:auto}
 .modal .mfoot{padding:12px 18px;border-top:var(--bd);display:flex;justify-content:flex-end;gap:10px;background:var(--paper2)}
-.formerr{color:var(--red);font-family:var(--mono);font-size:11px;font-weight:700;margin-top:10px;min-height:14px}
+.formerr{color:var(--red);font-family:var(--sans);font-size:12px;font-weight:600;margin-top:10px;min-height:14px}
 
 /* ---- login ---- */
-.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
-  background:repeating-linear-gradient(-45deg,var(--paper) 0 26px,var(--paper2) 26px 30px)}
-.login{width:400px;background:var(--white);border:var(--bd);box-shadow:12px 12px 0 var(--ink);padding:30px}
-.login .big{font-variation-settings:'wdth' 125;font-weight:900;font-size:38px;line-height:.95;text-transform:uppercase}
-.login .big b{color:transparent;-webkit-text-stroke:2px var(--ink)}
-.login .tag{font-family:var(--mono);font-size:9.5px;letter-spacing:.3em;color:var(--dim);margin:8px 0 4px;text-transform:uppercase}
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:var(--paper2)}
+.login{width:400px;background:var(--white);border:var(--bd);box-shadow:0 12px 32px rgba(15,15,15,.1);padding:30px;border-radius:14px}
+.login .big{font-weight:800;font-size:32px;line-height:1.05;text-transform:none;letter-spacing:-.01em}
+.login .big b{color:var(--accent);font-weight:800}
+.login .tag{font-family:var(--sans);font-size:12px;color:var(--dim);margin:8px 0 4px;text-transform:none;letter-spacing:0}
 
-/* ---- product lab theme (illustration-flavored, applies on product views) ---- */
-body.theme-product{background:#F7F2E7}
-.theme-product .mainwrap{
-  background:
-    radial-gradient(circle at 12% 8%, rgba(108,76,241,.07) 0 90px, transparent 90px),
-    radial-gradient(circle at 88% 30%, rgba(255,122,100,.08) 0 70px, transparent 70px),
-    radial-gradient(circle at 70% 85%, rgba(43,180,154,.07) 0 110px, transparent 110px),
-    #F7F2E7}
-.theme-product .topbar{background:#F7F2E7;border-bottom:2px solid #2A2440}
-.theme-product .topbar h1{color:#2A2440}
-.prod-hero{position:relative;border:2px solid #2A2440;border-radius:20px;background:#FFFDF7;
-  padding:26px 28px 22px;margin-bottom:24px;overflow:hidden;box-shadow:0 10px 0 rgba(42,36,64,.08)}
-.prod-hero h2{font-size:26px;font-weight:850;color:#2A2440;text-transform:uppercase;font-variation-settings:'wdth' 118}
-.prod-hero h2 b{color:#6C4CF1}
-.prod-hero .ph-sub{font-size:13.5px;color:#6b6480;margin-top:4px;max-width:520px}
-.prod-hero svg{position:absolute;right:14px;top:50%;transform:translateY(-50%);opacity:.9}
-@media(max-width:800px){.prod-hero svg{display:none}}
-.prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:22px}
-.prodcard{border:2px solid #2A2440;border-radius:18px;background:#FFFDF7;padding:20px;cursor:pointer;
-  box-shadow:0 8px 0 rgba(42,36,64,.10);transition:transform .12s}
-.prodcard:hover{transform:translateY(-3px) rotate(-.4deg)}
-.prodcard .pc-top{display:flex;gap:14px;align-items:center}
-.prodcard .pc-ill{width:64px;height:64px;flex-shrink:0;border:2px solid #2A2440;border-radius:14px;
-  display:flex;align-items:center;justify-content:center;background:var(--pcc,#EFE9FF)}
-.prodcard h3{font-size:17px;font-weight:800;color:#2A2440;text-transform:uppercase}
-.prodcard .pc-key{font-family:var(--mono);font-size:10px;color:#6C4CF1;letter-spacing:.14em}
-.prodcard .pc-desc{font-size:12.5px;color:#6b6480;margin-top:2px}
+/* ---- product lab (same design system as the rest of the app) ---- */
+.prod-hero{position:relative;border:var(--bd);border-radius:var(--radius);background:var(--white);
+  padding:22px 26px;margin-bottom:22px;box-shadow:var(--shadow)}
+.prod-hero h2{font-size:20px;font-weight:700;color:var(--ink);letter-spacing:-.01em}
+.prod-hero h2 b{color:var(--accent)}
+.prod-hero .ph-sub{font-size:13px;color:var(--dim);margin-top:4px;max-width:560px}
+.prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.prodcard{border:var(--bd);border-radius:var(--radius);background:var(--white);padding:18px;cursor:pointer;
+  box-shadow:var(--shadow);transition:transform .12s,box-shadow .12s}
+.prodcard:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(15,15,15,.08)}
+.prodcard .pc-top{display:flex;gap:12px;align-items:center}
+.prodcard h3{font-size:16px;font-weight:700;color:var(--ink)}
+.prodcard .pc-key{font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.04em;background:var(--paper2);color:var(--dim);display:inline-block;padding:2px 8px;border-radius:5px}
+.prodcard .pc-desc{font-size:12.5px;color:var(--dim);margin-top:2px}
 .pc-progress{margin-top:16px}
-.pc-progress .lbl{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:#6b6480;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px}
-.pc-bar{height:14px;border:2px solid #2A2440;border-radius:9px;background:#F1EBDD;overflow:hidden}
-.pc-bar i{display:block;height:100%;background:repeating-linear-gradient(-55deg,#6C4CF1 0 10px,#8266F5 10px 20px);border-radius:6px 0 0 6px}
+.pc-progress .lbl{display:flex;justify-content:space-between;font-family:var(--sans);font-size:11px;color:var(--dim);margin-bottom:5px}
+.pc-bar{height:8px;border-radius:99px;background:var(--paper2);overflow:hidden}
+.pc-bar i{display:block;height:100%;background:var(--accent);border-radius:99px}
 .pc-mini{display:flex;gap:6px;margin-top:12px}
-.pc-mini span{flex:1;text-align:center;font-family:var(--mono);font-size:10px;border:2px solid #2A2440;border-radius:8px;padding:5px 2px;background:#fff}
-.pc-mini .n{display:block;font-size:15px;font-weight:800}
-.pc-sugg{margin-top:14px;border-top:2px dashed #D9D2C2;padding-top:10px}
-.pc-sugg li{list-style:none;font-size:12px;color:#2A2440;padding:3px 0 3px 22px;position:relative}
-.pc-sugg li::before{content:"✏";position:absolute;left:0}
-.pc-sugg li.warn::before{content:"⚡"}
-.pc-target{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:700;border:2px solid #2A2440;border-radius:8px;padding:3px 9px;background:#FFD900;margin-top:2px}
-.pc-target.passed{background:#FF7A64;color:#fff}
-/* product-themed board */
-.theme-product .kcol{border-radius:16px;border-width:2px;border-color:#2A2440;background:#F1EBDD;box-shadow:0 8px 0 rgba(42,36,64,.10)}
-.theme-product .kcol .khead{background:#2A2440;border-radius:13px 13px 0 0;border-bottom-width:2px}
-.theme-product .card{border-radius:12px;border-width:2px;border-color:#2A2440;box-shadow:0 4px 0 rgba(42,36,64,.12);background:#FFFDF7}
-.theme-product button.primary{background:#6C4CF1;color:#fff;border-color:#2A2440}
-.theme-product .fchip.on{background:#6C4CF1;color:#fff}
+.pc-mini span{flex:1;text-align:center;font-family:var(--sans);font-size:10.5px;color:var(--dim);border:1px solid var(--line);border-radius:6px;padding:5px 2px;background:var(--paper2)}
+.pc-mini .n{display:block;font-size:15px;font-weight:700;color:var(--ink)}
+.pc-sugg{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
+.pc-sugg li{list-style:none;font-size:12px;color:var(--dim);padding:3px 0 3px 20px;position:relative}
+.pc-sugg li::before{content:"·";position:absolute;left:4px;font-weight:700}
+.pc-sugg li.warn{color:#C0392B}
+.pc-sugg li.warn::before{content:"!"}
+.pc-target{display:inline-block;font-family:var(--sans);font-size:11px;font-weight:600;border:1px solid var(--line);border-radius:5px;padding:2px 8px;background:var(--yellow);color:#8A6D1D;margin-top:2px}
+.pc-target.passed{background:#FDECEB;color:#C0392B;border-color:#F5C6C4}
 
 /* ---- mobile ---- */
 .menu-btn{display:none}
 @media(max-width:900px){
   .shell{grid-template-columns:1fr}
   aside{position:fixed;left:0;top:0;bottom:0;width:260px;max-width:82vw;height:100dvh;z-index:80;
-    transform:translateX(-103%);transition:transform .16s ease;box-shadow:8px 0 0 rgba(20,20,20,.25)}
+    transform:translateX(-103%);transition:transform .16s ease;box-shadow:4px 0 20px rgba(15,15,15,.2)}
   aside.open{transform:none}
   .menu-btn{display:inline-block}
   .topbar{padding:12px 14px;gap:10px}
@@ -315,9 +298,10 @@ const initials=(n)=>String(n||"?").split(/\s+/).map(w=>w[0]).slice(0,2).join("")
 const stampCls=(v)=>String(v||"").replace(/\s/g,"");
 const isPast=(d)=>d&&new Date(d)<new Date(new Date().toDateString());
 
-let ME=null, USERS=[], PROJECTS=[], STORIES=[], NOTIFS=[], BOARD_STORIES=[], BOARD_CRIT=new Map();
+let ME=null, USERS=[], PROJECTS=[], STORIES=[], NOTIFS=[], BOARD_STORIES=[], BOARD_CRIT=new Map(), RBAC={};
 let FILTER={type:"all",assignee:"",q:""};
 const isLead=()=>ME&&(ME.role==="ADMIN"||ME.role==="DEVLEAD");
+const canSeePage=(page)=>ME&&(ME.role==="ADMIN"||(RBAC[page]||[]).includes(ME.role));
 
 async function api(path,opts={}){
   const res=await fetch(path,{...opts,headers:{...(opts.body?{"Content-Type":"application/json"}:{}),...(opts.headers||{})}});
@@ -333,10 +317,16 @@ function route(){
   if(m) return {view:"board",projectId:Number(m[1])};
   const rt=/^#\/reset\/([\w-]+)/.exec(h);
   if(rt) return {view:"reset",token:rt[1]};
+  const shp=/^#\/showcase\/project\/([\w-]+)/.exec(h);
+  if(shp) return {view:"showcase-project",token:shp[1]};
+  const shu=/^#\/showcase\/person\/([\w-]+)/.exec(h);
+  if(shu) return {view:"showcase-person",token:shu[1]};
   if(h.startsWith("#/products")) return {view:"products"};
   if(h.startsWith("#/clients")||h.startsWith("#/projects")) return {view:"clients"};
+  if(h.startsWith("#/internal")) return {view:"internal"};
   if(h.startsWith("#/command")) return {view:"command"};
   if(h.startsWith("#/team")) return {view:"team"};
+  if(h.startsWith("#/access")) return {view:"access"};
   return {view:"dashboard"};
 }
 window.addEventListener("hashchange",()=>render());
@@ -348,7 +338,7 @@ async function boot(){
   const users=await api("/api/users");
   ME=users.find(u=>u.username===st.username);
   USERS=users.filter(u=>u.enabled);
-  PROJECTS=await api("/api/pm-projects");
+  [PROJECTS,RBAC]=await Promise.all([api("/api/pm-projects"),api("/api/rbac").catch(()=>({}))]);
   await refreshNotifs();
   render();
 }
@@ -365,28 +355,32 @@ function render(){
   const app=$("#app");
   const r0=route();
   if(r0.view==="reset"){app.innerHTML=resetView(r0.token);return;}
+  if(r0.view==="showcase-project"){app.innerHTML=`<div class="login-wrap"><div class="login" style="text-align:center">Loading…</div></div>`;renderShowcaseProject(r0.token);return;}
+  if(r0.view==="showcase-person"){app.innerHTML=`<div class="login-wrap"><div class="login" style="text-align:center">Loading…</div></div>`;renderShowcasePerson(r0.token);return;}
   if(!ME){app.innerHTML=loginView();return;}
   const r=r0;
   const unread=NOTIFS.filter(n=>!n.read).length;
   const boardProject=r.view==="board"?PROJECTS.find(p=>p.id===r.projectId):null;
-  const titles={dashboard:"My Dashboard",command:"Command",products:"Product Lab",clients:"Client Projects",team:"Team",board:boardProject?.name||"Board"};
-  document.body.classList.toggle("theme-product", r.view==="products"||(boardProject?.category==="product"));
-  const products=PROJECTS.filter(p=>p.category==="product"), clients=PROJECTS.filter(p=>p.category!=="product");
+  const titles={dashboard:"My Dashboard",command:"Command",products:"Product Lab",clients:"Client Projects",internal:"Internal Works",team:"Team",access:"Access Control",board:boardProject?.name||"Board"};
+  const products=PROJECTS.filter(p=>p.category==="product"), clients=PROJECTS.filter(p=>p.category==="client"||!p.category), internal=PROJECTS.filter(p=>p.category==="internal");
   const plink=(p)=>`<a href="#/board/${p.id}"><span class="k">${esc(p.key)}</span>${esc(p.name)}</a>`;
   app.innerHTML=`
   <div class="shell">
     <aside>
-      <div class="logo"><div class="big">CORE<b>KIT</b></div><div class="tag">Trivyah Tech · Tracker</div></div>
+      <div class="logo"><div class="big">Trivyah</div><div class="tag">Task Manager</div></div>
       <nav>
-        <a href="#/dashboard" class="${r.view==="dashboard"?"on":""}">Dashboard</a>
-        ${isLead()?`<a href="#/command" class="${r.view==="command"?"on":""}">Command</a>`:""}
-        <a href="#/products" class="${r.view==="products"?"on":""}">Products</a>
-        <a href="#/clients" class="${r.view==="clients"?"on":""}">Clients</a>
-        ${ME.role==="ADMIN"?`<a href="#/team" class="${r.view==="team"?"on":""}">Team</a>`:""}
+        ${canSeePage("dashboard")?`<a href="#/dashboard" class="${r.view==="dashboard"?"on":""}">Dashboard</a>`:""}
+        ${canSeePage("command")?`<a href="#/command" class="${r.view==="command"?"on":""}">Command</a>`:""}
+        ${canSeePage("products")?`<a href="#/products" class="${r.view==="products"?"on":""}">Products</a>`:""}
+        ${canSeePage("clients")?`<a href="#/clients" class="${r.view==="clients"?"on":""}">Clients</a>`:""}
+        ${canSeePage("internal")?`<a href="#/internal" class="${r.view==="internal"?"on":""}">Internal Works</a>`:""}
+        ${canSeePage("team")?`<a href="#/team" class="${r.view==="team"?"on":""}">Team</a>`:""}
+        ${ME.role==="ADMIN"?`<a href="#/access" class="${r.view==="access"?"on":""}">Access Control</a>`:""}
       </nav>
       <div class="plist">
         ${products.length?`<div class="pl-h">Products</div>${products.map(plink).join("")}`:""}
         ${clients.length?`<div class="pl-h" style="margin-top:8px">Clients</div>${clients.map(plink).join("")}`:""}
+        ${internal.length?`<div class="pl-h" style="margin-top:8px">Internal</div>${internal.map(plink).join("")}`:""}
       </div>
       <div class="who"><div class="nm">${esc(ME.displayName)}</div><div class="rl">${esc(ME.role)}</div>
         <button data-act="logout">Log out</button></div>
@@ -407,11 +401,14 @@ function render(){
   <div class="overlay" id="overlay" data-act="close"></div>
   <div class="drawer" id="drawer"></div>
   <div class="modal" id="modal"></div>`;
+  if(r.view!=="board"&&r.view!=="access"&&!canSeePage(r.view)){location.hash="#/dashboard";return;}
   if(r.view==="dashboard") renderDashboard();
   else if(r.view==="command") renderCommand();
   else if(r.view==="products") renderProducts();
   else if(r.view==="clients") renderProjects();
+  else if(r.view==="internal") renderInternal();
   else if(r.view==="team") renderTeam();
+  else if(r.view==="access"){if(ME.role!=="ADMIN"){location.hash="#/dashboard";return;}renderAccess();}
   else renderBoard(r.projectId);
 }
 function closePanels(){$("#overlay")?.classList.remove("open");$("#drawer")?.classList.remove("open");$("#modal")?.classList.remove("open");$("aside")?.classList.remove("open");}
@@ -468,7 +465,7 @@ function loginView(){setTimeout(()=>{
     alert("If that account has an email on file, a reset link was sent. Otherwise ask your admin for a reset link.");};
 },0);
 return `<div class="login-wrap"><form class="login" id="loginForm">
-  <div class="big">CORE<b>KIT</b></div><div class="tag">Tracker · Projects · Issues · Kanban</div>
+  <div class="big">Trivyah Task Manager</div><div class="tag">Projects · Issues · Kanban</div>
   <label>Username</label><input id="lu" autocomplete="username" required>
   <label>Password</label><input id="lp" type="password" autocomplete="current-password" required>
   <div class="formerr" id="lerr"></div>
@@ -486,12 +483,70 @@ function resetView(token){setTimeout(()=>{
     }catch(err){$("#rerr").textContent=err.message;}};
 },0);
 return `<div class="login-wrap"><form class="login" id="resetForm">
-  <div class="big">CORE<b>KIT</b></div><div class="tag">Set a new password</div>
+  <div class="big">Trivyah Task Manager</div><div class="tag">Set a new password</div>
   <label>New password</label><input id="rp1" type="password" autocomplete="new-password" required>
   <label>Repeat it</label><input id="rp2" type="password" autocomplete="new-password" required>
   <div class="formerr" id="rerr"></div>
   <button class="primary" style="width:100%;margin-top:8px">Set password →</button>
 </form></div>`;}
+
+// ---------- public showcase pages (no login) ----------
+async function renderShowcaseProject(token){
+  const app=$("#app");
+  let d; try{d=await api("/api/showcase/project/"+token);}
+  catch{app.innerHTML=`<div class="login-wrap"><div class="login"><div class="big">Trivyah Task Manager</div><p style="margin-top:14px">This showcase link is invalid or has been revoked.</p></div></div>`;return;}
+  const counts=d.storyCounts||{};
+  const board=d.board||[];
+  app.innerHTML=`<div style="min-height:100vh;background:var(--paper2);padding:40px 20px">
+    <div style="max-width:1100px;margin:0 auto;background:var(--white);border:var(--bd);border-radius:var(--radius);box-shadow:var(--shadow);padding:30px 34px">
+      <div class="tag" style="font-family:var(--sans);font-size:12px;color:var(--dim)">${d.clientName?esc(d.clientName)+" · ":""}${esc(d.category||"")}</div>
+      <div class="big" style="font-weight:800;font-size:26px;margin-top:4px;letter-spacing:-.01em">${esc(d.name)}</div>
+      ${d.description?`<p style="margin-top:10px;color:var(--dim)">${esc(d.description)}</p>`:""}
+      <div class="foot" style="display:flex;gap:8px;flex-wrap:wrap;margin:16px 0">
+        <span class="stamp">${esc(d.projectStatus)}</span><span class="stamp ${esc(d.priority)}">${esc(d.priority)}</span>
+        ${d.dueDate?`<span class="stamp">due ${fmtD(d.dueDate)}</span>`:""}</div>
+      <div class="tiles">${tiles([
+        [counts.Backlog||0,"Backlog"],[counts["In Progress"]||0,"In progress"],
+        [counts["In Review"]||0,"In review"],[counts.Done||0,"Done","",""]])}</div>
+
+      <h2 style="font-size:15px;margin:26px 0 12px">Board <span style="color:var(--dim);font-weight:500">(read-only)</span></h2>
+      <div class="kanban">${STATUSES.map(st=>{
+        const items=board.filter(s=>s.storyStatus===st);
+        return `<div class="kcol" data-status="${st}">
+          <div class="khead"><h4>${st}</h4><span class="cnt" style="--kc:${KC[st]};background:${KC[st]}">${items.length}</span></div>
+          <div class="klist">${items.map(s=>{const od=isPast(s.dueDate)&&st!=="Done";
+            return `<div class="card" style="cursor:default">
+            <div class="top"><span class="num">${esc(s.number)}</span><span class="stamp ${stampCls(s.type)}" style="border-width:1px">${esc(s.type)}</span></div>
+            <div class="nm">${esc(s.name)}</div>
+            <div class="bot"><div class="meta">
+              ${s.priority==="High"?'<span style="color:var(--red);font-weight:700">HIGH</span>':""}
+              ${s.dueDate?`<span class="${od?"late":""}">${od?"⚑ ":""}${fmtD(s.dueDate)}</span>`:""}
+              ${s.module?`<span>${esc(s.module)}</span>`:""}</div>
+            <div class="who" title="${esc(s.assigneeName||"unassigned")}">${initials(s.assigneeName)}</div></div></div>`;}).join("")||'<div class="empty" style="padding:12px;font-size:11px">Empty</div>'}</div>
+        </div>`;}).join("")}</div>
+
+      ${d.media?.length?`<div class="block" style="margin-top:24px"><div class="bhead"><h2>Media</h2></div><div class="bpad" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px">
+        ${d.media.map(f=>f.kind==="image"?`<img src="${f.url}" alt="${esc(f.filename)}" style="width:100%;border:var(--bd);border-radius:6px;object-fit:cover;aspect-ratio:1">`
+          :`<video src="${f.url}" controls style="width:100%;border:var(--bd);border-radius:6px"></video>`).join("")}</div></div>`:""}
+      <div style="text-align:center;margin-top:24px;font-family:var(--mono);font-size:10px;color:var(--dim)">Shared read-only view — Trivyah Task Manager</div>
+    </div></div>`;
+}
+async function renderShowcasePerson(token){
+  const app=$("#app");
+  let d; try{d=await api("/api/showcase/person/"+token);}
+  catch{app.innerHTML=`<div class="login-wrap"><div class="login"><div class="big">Trivyah Task Manager</div><p style="margin-top:14px">This showcase link is invalid or has been revoked.</p></div></div>`;return;}
+  app.innerHTML=`<div class="login-wrap" style="align-items:flex-start;padding-top:60px">
+    <div class="login" style="width:640px;max-width:96vw;text-align:left">
+      <div class="tag">${esc(d.role||"")}</div>
+      <div class="big" style="font-size:28px;margin-top:4px">${esc(d.displayName)}</div>
+      <div class="tiles">${tiles([
+        [d.storiesDone,"Items shipped"],[d.storiesTotal,"Items worked on"],[d.score,"Effort score"]])}</div>
+      <div class="block"><div class="bhead"><h2>Projects</h2></div>
+        <div class="bpad" style="display:flex;flex-wrap:wrap;gap:8px">
+          ${d.projects?.length?d.projects.map(p=>`<span class="stamp">${esc(p.key)} — ${esc(p.name)}</span>`).join(""):'<span class="empty">No project work yet</span>'}</div></div>
+      <div style="text-align:center;margin-top:20px;font-family:var(--mono);font-size:10px;color:var(--dim)">Shared read-only view — Trivyah Task Manager</div>
+    </div></div>`;
+}
 
 // ---------- dashboard ----------
 let ANALYTICS=null;
@@ -590,19 +645,7 @@ async function renderCommand(){
   $("#main").innerHTML=html;
 }
 
-// ---------- product lab (illustration-themed) ----------
-const PROD_ILLS=[ // hand-drawn doodle marks, one per product (cycled)
-  `<svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#2A2440" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="16" width="13" height="13" rx="2"/><rect x="14" y="7" width="13" height="13" rx="2" fill="#FFD900"/><path d="M25 29l7 7M32 29l-7 7"/></svg>`,
-  `<svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#2A2440" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="15" cy="13" r="6" fill="#FF7A64"/><path d="M5 33c1-7 5-10 10-10s9 3 10 10"/><circle cx="30" cy="16" r="4.5" fill="#FFD900"/><path d="M24 33c.7-5 3-7.5 6-7.5s5.3 2.5 6 7.5"/></svg>`,
-  `<svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#2A2440" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="14" width="26" height="17" rx="3" fill="#B9F0E5"/><path d="M7 21h26M13 14V9a3 3 0 013-3h8a3 3 0 013 3v5"/><circle cx="20" cy="26" r="2.6" fill="#FFD900"/></svg>`,
-  `<svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#2A2440" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4c6 5 8 12 8 18l-8 6-8-6c0-6 2-13 8-18z" fill="#E4DBFF"/><circle cx="20" cy="16" r="3.5" fill="#FFD900"/><path d="M12 28l-4 8M28 28l4 8M20 30v7"/></svg>`,
-];
-const HERO_ILL=`<svg width="230" height="120" viewBox="0 0 230 120" fill="none" stroke="#2A2440" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-  <rect x="12" y="48" width="42" height="42" rx="6" fill="#E4DBFF"/><rect x="30" y="26" width="42" height="42" rx="6" fill="#FFD900"/>
-  <path d="M96 84c0-18 12-30 28-30 3-12 22-16 30-5 12-4 24 4 24 16 10 2 14 20-2 24z" fill="#FFFDF7"/>
-  <path d="M120 40l4-12 4 12M188 24l3-9 3 9" /><circle cx="163" cy="99" r="9" fill="#B9F0E5"/><path d="M150 108h60"/>
-  <path d="M84 108c14-8 30-8 44 0" stroke="#FF7A64"/></svg>`;
-
+// ---------- product lab ----------
 async function renderProducts(){
   const products=PROJECTS.filter(p=>p.category==="product");
   const year=new Date().getFullYear();
@@ -613,13 +656,12 @@ async function renderProducts(){
 
   $("#main").innerHTML=`
   <div class="prod-hero">
-    <h2>CoreKit <b>Product Lab</b></h2>
+    <h2>Trivyah <b>Product Lab</b></h2>
     <div class="ph-sub">Yearly build plan for our own products — SCM, HRMS, POS and friends. Track ${year} targets, watch progress, and act on the suggestions.</div>
-    ${HERO_ILL}
   </div>
   <div style="display:flex;justify-content:flex-end;margin-bottom:16px"><button class="primary" data-act="new-project" data-cat="product">+ New product</button></div>
   <div class="prod-grid">
-  ${products.map((p,i)=>{
+  ${products.map((p)=>{
     const ps=stories.filter(s=>s.project?.id===p.id);
     const yearStories=ps.filter(s=>String(s.createdDate).startsWith(String(year)));
     const done=yearStories.filter(s=>s.storyStatus==="Done").length;
@@ -635,12 +677,11 @@ async function renderProducts(){
     if(p.targetDate&&isPast(p.targetDate)&&open.length)sugg.push({t:`target date passed with ${open.length} open — replan the milestone`,w:1});
     if(!open.length)sugg.push({t:"backlog empty — plan the next milestone",w:0});
     if(!sugg.length)sugg.push({t:"on track — keep shipping",w:0});
-    const colors=["#EFE9FF","#FFE9E4","#E2F6F0","#FFF6CC"];
     return `<div class="prodcard" data-act="open-project" data-id="${p.id}">
-      <div class="pc-top"><div class="pc-ill" style="--pcc:${colors[i%4]}">${PROD_ILLS[i%PROD_ILLS.length]}</div>
-        <div><div class="pc-key">${esc(p.key)} · PRODUCT</div><h3>${esc(p.name)}</h3>
+      <div class="pc-top"><div>
+        <div class="pc-key">${esc(p.key)} · PRODUCT</div><h3>${esc(p.name)}</h3>
         <div class="pc-desc">${esc(p.description||"")}</div>
-        ${p.targetDate?`<span class="pc-target ${isPast(p.targetDate)?"passed":""}">🎯 target ${fmtD(p.targetDate)}</span>`:""}</div></div>
+        ${p.targetDate?`<span class="pc-target ${isPast(p.targetDate)?"passed":""}">target ${fmtD(p.targetDate)}</span>`:""}</div></div>
       <div class="pc-progress"><div class="lbl"><span>${year} progress</span><span>${done}/${yearStories.length} · ${pct}%</span></div>
         <div class="pc-bar"><i style="width:${pct}%"></i></div></div>
       <div class="pc-mini">
@@ -652,11 +693,8 @@ async function renderProducts(){
 }
 
 // ---------- clients ----------
-function renderProjects(){
-  $("#main").innerHTML=`
-  <div style="display:flex;justify-content:flex-end;margin-bottom:18px"><button class="primary" data-act="new-project" data-cat="client">+ New client project</button></div>
-  <div class="pgrid">${PROJECTS.filter(p=>p.category!=="product").map(p=>`
-    <div class="pcard" data-act="open-project" data-id="${p.id}">
+function pcardHtml(p){
+  return `<div class="pcard" data-act="open-project" data-id="${p.id}">
       <span class="key">${esc(p.key)}</span>
       ${ME.role==="ADMIN"?`<button class="bare" data-act="del-project" data-id="${p.id}" data-name="${esc(p.name)}" style="float:right;color:var(--red)">✕</button>`:""}
       <h3>${esc(p.name)}</h3>
@@ -669,24 +707,53 @@ function renderProjects(){
         const u=USERS.find(x=>x.id===id);
         return u?`<span class="who" style="width:22px;height:22px;background:var(--ink);color:var(--yellow);display:inline-flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:8.5px;font-weight:700" title="${esc(u.displayName)}">${initials(u.displayName)}</span>`:"";
       }).join("")}</div>
-    </div>`).join("")||'<div class="empty">No projects yet</div>'}</div>`;
+    </div>`;
 }
+function renderProjects(){
+  const list=PROJECTS.filter(p=>p.category==="client"||!p.category);
+  const groups=new Map();
+  for(const p of list){
+    const k=p.clientName?.trim()||"Unassigned client";
+    if(!groups.has(k))groups.set(k,[]);
+    groups.get(k).push(p);
+  }
+  const sortedKeys=[...groups.keys()].sort((a,b)=>a==="Unassigned client"?1:b==="Unassigned client"?-1:a.localeCompare(b));
+  $("#main").innerHTML=`
+  <div style="display:flex;justify-content:flex-end;margin-bottom:18px"><button class="primary" data-act="new-project" data-cat="client">+ New client project</button></div>
+  ${list.length?sortedKeys.map(k=>`
+    <div style="font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:20px 0 10px">${esc(k)}</div>
+    <div class="pgrid">${groups.get(k).map(pcardHtml).join("")}</div>`).join("")
+    :'<div class="empty">No projects yet</div>'}`;
+}
+
+// ---------- internal works ----------
+function renderInternal(){
+  const list=PROJECTS.filter(p=>p.category==="internal");
+  $("#main").innerHTML=`
+  <div style="display:flex;justify-content:flex-end;margin-bottom:18px"><button class="primary" data-act="new-project" data-cat="internal">+ New internal project</button></div>
+  <div class="pgrid">${list.map(pcardHtml).join("")||'<div class="empty">No internal projects yet — hiring, ops, internal tooling, admin work…</div>'}</div>`;
+}
+const CAT_LABEL={client:"client project",product:"product",internal:"internal project"};
 function projectModal(cat="client"){
   const m=$("#modal");
-  m.innerHTML=`<div class="mhead">New ${cat==="product"?"product":"client project"}</div><div class="mbody">
-    <label>Name</label><input id="pn" placeholder="${cat==="product"?"e.g. SCM, HRMS, POS":"e.g. Mission NCC Store"}">
-    <label>Key</label><input id="pk" maxlength="6" placeholder="short prefix, e.g. ${cat==="product"?"SCM":"NCC"}">
+  m.innerHTML=`<div class="mhead">New ${CAT_LABEL[cat]||"project"}</div><div class="mbody">
+    <label>Name</label><input id="pn" placeholder="${cat==="product"?"e.g. SCM, HRMS, POS":cat==="internal"?"e.g. Hiring, Office IT":"e.g. Mission NCC Store"}">
+    <label>Key</label><input id="pk" maxlength="6" placeholder="short prefix, e.g. ${cat==="product"?"SCM":cat==="internal"?"OPS":"NCC"}">
     <label>Description</label><input id="pd">
     <div class="row2" style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-      <div><label>Type</label><select id="pc"><option value="client" ${cat==="client"?"selected":""}>Client project</option><option value="product" ${cat==="product"?"selected":""}>CoreKit product</option></select></div>
+      <div><label>Type</label><select id="pc">
+        <option value="client" ${cat==="client"?"selected":""}>Client project</option>
+        <option value="product" ${cat==="product"?"selected":""}>Trivyah product</option>
+        <option value="internal" ${cat==="internal"?"selected":""}>Internal work</option></select></div>
       <div><label>Priority</label><select id="pp"><option>Medium</option><option>High</option><option>Low</option></select></div>
       <div><label>Due date</label><input id="pdd" type="date"></div>
       <div><label>Yearly target date</label><input id="ptd" type="date"></div></div>
+    ${cat==="client"?`<label>Client name</label><input id="pcn" placeholder="e.g. Acme Corp">`:""}
     <div class="formerr" id="perr"></div></div>
   <div class="mfoot"><button data-act="close">Cancel</button><button class="primary" id="psave">Create</button></div>`;
   m.classList.add("open");$("#overlay").classList.add("open");
   $("#psave").onclick=async()=>{try{
-    await api("/api/pm-projects",{method:"POST",body:JSON.stringify({name:$("#pn").value,key:$("#pk").value,description:$("#pd").value,priority:$("#pp").value,dueDate:$("#pdd").value||null,category:$("#pc").value,targetDate:$("#ptd").value||null})});
+    await api("/api/pm-projects",{method:"POST",body:JSON.stringify({name:$("#pn").value,key:$("#pk").value,description:$("#pd").value,priority:$("#pp").value,dueDate:$("#pdd").value||null,category:$("#pc").value,targetDate:$("#ptd").value||null,clientName:$("#pcn")?.value||null})});
     PROJECTS=await api("/api/pm-projects");closePanels();render();
   }catch(e){$("#perr").textContent=e.message;}};
 }
@@ -699,7 +766,10 @@ function projectSettingsModal(p){
     <label>Name</label><input id="psn" value="${esc(p.name)}">
     <label>Description</label><input id="psd" value="${esc(p.description||"")}">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-      <div><label>Type</label><select id="psc"><option value="client" ${p.category!=="product"?"selected":""}>Client project</option><option value="product" ${p.category==="product"?"selected":""}>CoreKit product</option></select></div>
+      <div><label>Type</label><select id="psc">
+        <option value="client" ${(p.category||"client")==="client"?"selected":""}>Client project</option>
+        <option value="product" ${p.category==="product"?"selected":""}>Trivyah product</option>
+        <option value="internal" ${p.category==="internal"?"selected":""}>Internal work</option></select></div>
       <div><label>Priority</label><select id="psp">${["Low","Medium","High"].map(x=>`<option ${p.priority===x?"selected":""}>${x}</option>`).join("")}</select></div>
       <div><label>Status</label><select id="pss">${["Active","On Hold","Completed"].map(x=>`<option ${p.projectStatus===x?"selected":""}>${x}</option>`).join("")}</select></div>
       <div><label>Due date</label><input id="psdd" type="date" value="${p.dueDate||""}"></div>
@@ -713,15 +783,73 @@ function projectSettingsModal(p){
         ${esc(u.displayName)} <span class="mono" style="font-size:10px;color:var(--dim)">${esc(u.role)}</span></label>`).join("")}
     </div>
     <div style="font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:6px">Only admins see every project — everyone else (including dev leads) only sees projects they're on.</div>
+
+    <div class="dsec" style="margin:18px 0 0">
+      <div class="dsec-h"><span><i class="sq"></i>Client info</span></div>
+      <div class="dsec-b">
+        <label>Client name</label><input id="pscn" value="${esc(p.clientName||"")}" placeholder="e.g. Acme Corp">
+        <div class="row2">
+          <div><label>Contact person</label><input id="pscc" value="${esc(p.clientContactName||"")}"></div>
+          <div><label>Phone</label><input id="pscp" value="${esc(p.clientPhone||"")}"></div>
+        </div>
+        <label>Email</label><input id="psce" type="email" value="${esc(p.clientEmail||"")}">
+      </div>
+    </div>
+
+    <div class="dsec">
+      <div class="dsec-h"><span><i class="sq" style="--sc:var(--red)"></i>Documents, images &amp; videos</span><span class="n" id="pfcount"></span></div>
+      <div class="dsec-b"><div id="pflist" style="margin-top:10px"><div class="empty">loading…</div></div>
+        <div style="display:flex;gap:10px;margin-top:10px;align-items:center">
+          <input type="file" id="pfpick" style="border:none;padding:0;background:none">
+          <button class="bare" id="pfup">Upload</button></div></div>
+    </div>
+
+    <div class="dsec">
+      <div class="dsec-h"><span><i class="sq" style="--sc:var(--blue)"></i>Showcase link</span></div>
+      <div class="dsec-b" style="padding-top:12px">
+        <div style="font-size:12.5px;color:var(--dim);margin-bottom:8px">A read-only page anyone with the link can view — no login, no comments/history, just status and media.</div>
+        ${p.shareToken?`<input id="pslink" readonly value="${location.origin}/#/showcase/project/${p.shareToken}">
+        <div style="margin-top:8px;display:flex;gap:8px"><button class="bare" id="pscopy">Copy link</button><button class="bare" style="color:var(--red)" id="psrevoke">Revoke</button></div>`
+        :`<button class="bare" id="psgen">Generate showcase link</button>`}
+      </div>
+    </div>
     <div class="formerr" id="pserr"></div></div>
   <div class="mfoot"><button data-act="close">Cancel</button><button class="primary" id="pssave">Save</button></div>`;
   m.classList.add("open");$("#overlay").classList.add("open");
+  const loadPFiles=()=>api("/api/project-files?projectId="+p.id).then(fs=>{
+    $("#pfcount").textContent=fs.length?`× ${fs.length}`:"";
+    $("#pflist").innerHTML=fs.length?fs.map(f=>`<div class="file-row">
+      <a href="${f.url}" download>${esc(f.filename)}</a><span class="fs">${esc(f.kind)} · ${fmtSize(f.size)} · ${esc(f.uploadedBy?.displayName||"")}</span>
+      <span class="sp"></span>${(ME.role==="ADMIN"||f.uploadedBy?.id===ME.id)?`<button class="bare" data-pfdel="${f.id}">✕</button>`:""}</div>`).join("")
+      :'<div class="empty">No files</div>';
+    $$("[data-pfdel]",m).forEach(b=>b.onclick=async()=>{try{await api("/api/project-files/"+b.dataset.pfdel,{method:"DELETE"});}catch(e){alert(e.message);}loadPFiles();});});
+  loadPFiles();
+  $("#pfup").onclick=async()=>{
+    const f=$("#pfpick").files[0]; if(!f){alert("Choose a file first");return;}
+    if(f.size>25*1024*1024){alert("Max 25 MB");return;}
+    const kind=f.type.startsWith("image/")?"image":f.type.startsWith("video/")?"video":"document";
+    const b64=await new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result.split(",")[1]);r.onerror=no;r.readAsDataURL(f);});
+    $("#pfup").textContent="…";
+    try{await api("/api/project-files",{method:"POST",body:JSON.stringify({projectId:p.id,filename:f.name,mime:f.type,kind,dataBase64:b64})});
+      $("#pfpick").value="";loadPFiles();}catch(e){alert(e.message);}
+    $("#pfup").textContent="Upload";};
+  $("#pscopy")?.addEventListener("click",()=>{$("#pslink").select();navigator.clipboard?.writeText($("#pslink").value);$("#pscopy").textContent="Copied ✓";});
+  $("#psgen")?.addEventListener("click",async()=>{try{
+    const updated=await api(`/api/pm-projects/${p.id}/share`,{method:"POST",body:"{}"});
+    PROJECTS=await api("/api/pm-projects");closePanels();projectSettingsModal(PROJECTS.find(x=>x.id===p.id)||updated);
+  }catch(e){alert(e.message);}});
+  $("#psrevoke")?.addEventListener("click",async()=>{if(!confirm("Revoke this showcase link? The old URL will stop working."))return;try{
+    await api(`/api/pm-projects/${p.id}/share`,{method:"POST",body:JSON.stringify({revoke:true})});
+    PROJECTS=await api("/api/pm-projects");closePanels();projectSettingsModal(PROJECTS.find(x=>x.id===p.id));
+  }catch(e){alert(e.message);}});
   $("#pssave").onclick=async()=>{try{
     const assignees=$$("[data-member]",m).filter(c=>c.checked).map(c=>c.dataset.member).join(",");
     await api("/api/pm-projects/"+p.id,{method:"PUT",body:JSON.stringify({
       name:$("#psn").value,description:$("#psd").value,priority:$("#psp").value,
       projectStatus:$("#pss").value,dueDate:$("#psdd").value||null,
       category:$("#psc").value,targetDate:$("#pstd").value||null,
+      clientName:$("#pscn").value||null,clientContactName:$("#pscc").value||null,
+      clientPhone:$("#pscp").value||null,clientEmail:$("#psce").value||null,
       assignedTo:{id:Number($("#pso").value)},assignees})});
     PROJECTS=await api("/api/pm-projects");closePanels();render();
   }catch(e){$("#pserr").textContent=e.message;}};
@@ -950,10 +1078,15 @@ async function renderTeam(){
     <td data-l="" style="white-space:nowrap">
       <button class="bare" data-uedit="${u.id}">edit</button>
       <button class="bare" data-ureset="${u.id}">reset pw</button>
+      <button class="bare" data-ushare="${u.id}">showcase link</button>
       ${u.id!==ME.id?`<button class="bare" data-utoggle="${u.id}" data-en="${u.enabled?0:1}">${u.enabled?"disable":"enable"}</button>
       <button class="bare" style="color:var(--red)" data-udel="${u.id}" data-name="${esc(u.displayName)}">delete</button>`:""}
     </td></tr>`).join("")}</tbody></table></div>`;
   $$("[data-uedit]").forEach(b=>b.onclick=()=>editUserModal(all.find(u=>u.id===Number(b.dataset.uedit))));
+  $$("[data-ushare]").forEach(b=>b.onclick=async()=>{
+    const u=all.find(x=>x.id===Number(b.dataset.ushare));
+    try{const updated=await api(`/api/users/${u.id}/share`,{method:"POST",body:"{}"});shareLinkModal(updated);}
+    catch(e){alert(e.message);}});
   $$("[data-ureset]").forEach(b=>b.onclick=async()=>{
     const u=all.find(x=>x.id===Number(b.dataset.ureset));
     b.textContent="…";
@@ -998,6 +1131,17 @@ function resetLinkModal(u,r){
   m.classList.add("open");$("#overlay").classList.add("open");
   $("#rcopy").onclick=()=>{$("#rlink").select();navigator.clipboard?.writeText($("#rlink").value);$("#rcopy").textContent="Copied ✓";};
 }
+function shareLinkModal(u){
+  const m=$("#modal");
+  const link=`${location.origin}/#/showcase/person/${u.shareToken}`;
+  m.innerHTML=`<div class="mhead">Showcase link — ${esc(u.displayName)}</div><div class="mbody">
+    <p style="font-size:13px;margin-top:12px">A read-only page showing ${esc(u.displayName)}'s shipped work and effort score — anyone with the link can view it, no login needed.</p>
+    <label>Link</label><input id="rlink" readonly value="${esc(link)}">
+    <div style="margin-top:10px"><button class="bare" id="rcopy">Copy link</button></div></div>
+  <div class="mfoot"><button class="primary" data-act="close">Done</button></div>`;
+  m.classList.add("open");$("#overlay").classList.add("open");
+  $("#rcopy").onclick=()=>{$("#rlink").select();navigator.clipboard?.writeText($("#rlink").value);$("#rcopy").textContent="Copied ✓";};
+}
 function userModal(){
   const m=$("#modal");
   m.innerHTML=`<div class="mhead">Add user</div><div class="mbody">
@@ -1030,6 +1174,34 @@ function inviteModal(u){
   <div class="mfoot"><button class="primary" id="idone">Done</button></div>`;
   $("#rcopy").onclick=()=>{$("#rlink").select();navigator.clipboard?.writeText($("#rlink").value);$("#rcopy").textContent="Copied ✓";};
   $("#idone").onclick=()=>{closePanels();renderTeam();};
+}
+
+// ---------- access control (admin: which roles see which pages) ----------
+const RBAC_PAGE_LABELS={dashboard:"Dashboard",command:"Command",products:"Product Lab",clients:"Client Projects",internal:"Internal Works",team:"Team"};
+const RBAC_ROLES=["USER","DEV","DEVLEAD","ADMIN"];
+function renderAccess(){
+  $("#main").innerHTML=`
+  <div class="block"><div class="bhead"><h2>Access Control</h2><div class="note">which roles can see which sections — Admin always has full access</div></div>
+  <div class="bpad">
+  <table><thead><tr><th>Page</th>${RBAC_ROLES.map(r=>`<th style="text-align:center">${r}</th>`).join("")}</tr></thead><tbody>
+  ${Object.keys(RBAC_PAGE_LABELS).map(page=>`<tr>
+    <td><b>${esc(RBAC_PAGE_LABELS[page])}</b></td>
+    ${RBAC_ROLES.map(role=>`<td style="text-align:center">
+      <input type="checkbox" data-rbac="${page}" data-role="${role}" style="width:auto"
+        ${role==="ADMIN"?"checked disabled":(RBAC[page]||[]).includes(role)?"checked":""}></td>`).join("")}
+    </tr>`).join("")}
+  </tbody></table>
+  <div class="formerr" id="rbacerr"></div>
+  <div style="margin-top:16px"><button class="primary" id="rbacsave">Save changes</button></div>
+  </div></div>`;
+  $("#rbacsave").onclick=async()=>{
+    const body={};
+    for(const page of Object.keys(RBAC_PAGE_LABELS)){
+      body[page]=RBAC_ROLES.filter(role=>role==="ADMIN"||$(`[data-rbac="${page}"][data-role="${role}"]`).checked);
+    }
+    try{RBAC=await api("/api/rbac",{method:"PUT",body:JSON.stringify(body)});renderAccess();}
+    catch(e){$("#rbacerr").textContent=e.message;}
+  };
 }
 
 boot();

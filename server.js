@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * CoreKit Tracker — lightweight project management (projects, issues, kanban).
+ * Trivyah Task Manager — lightweight project management (projects, issues, kanban).
  * Zero dependencies: node:http + node:sqlite + node:crypto.
  *
  * API is Sprint0-compatible on purpose, so the sprint0-mcp server and the
@@ -101,12 +101,18 @@ const userShape = (u) => u && {
 };
 const getUser = (id) => id == null ? null : db.prepare("SELECT * FROM users WHERE id=?").get(id);
 
+const CATEGORIES = new Set(["client", "product", "internal"]);
+const normCategory = (c) => (CATEGORIES.has(c) ? c : "client");
+
 const projectShape = (p) => p && {
   id: p.id, createdDate: p.createdDate, modifiedDate: p.modifiedDate,
   name: p.name, description: p.description, key: p.key, dueDate: p.dueDate,
   priority: p.priority, assignees: p.assignees, projectStatus: p.projectStatus,
   category: p.category || "client", targetDate: p.targetDate ?? null,
   assignedTo: userShape(getUser(p.assignedToId)),
+  clientName: p.clientName || null, clientContactName: p.clientContactName || null,
+  clientPhone: p.clientPhone || null, clientEmail: p.clientEmail || null,
+  shareToken: p.shareToken || null,
 };
 const getProject = (id) => db.prepare("SELECT * FROM projects WHERE id=?").get(id);
 
@@ -164,7 +170,7 @@ function sendMail(to, subject, text, html) {
       `MAIL FROM:<${SMTP.from}>`,
       `RCPT TO:<${to}>`,
       `DATA`,
-      (`From: CoreKit Tracker <${SMTP.from}>\r\nTo: <${to}>\r\nSubject: ${subject}\r\nDate: ${date}\r\nMessage-ID: ${msgId}\r\nMIME-Version: 1.0\r\n${body}`)
+      (`From: Trivyah Task Manager <${SMTP.from}>\r\nTo: <${to}>\r\nSubject: ${subject}\r\nDate: ${date}\r\nMessage-ID: ${msgId}\r\nMIME-Version: 1.0\r\n${body}`)
         .replace(/\r\n\./g, "\r\n..") + `\r\n.`,
     ];
     let i = 0, ok = false, buf = "";
@@ -389,8 +395,8 @@ route("POST", "/api/auth/forgot", async (req) => {
   const u = db.prepare("SELECT * FROM users WHERE (username=? OR email=?) AND enabled=1").get(q, q);
   if (u && smtpConfigured() && u.email) {
     const link = `${PUBLIC_URL}/#/reset/${createResetToken(u.id)}`;
-    await sendMail(u.email, "CoreKit Tracker password reset",
-      `Reset your CoreKit Tracker password (valid 1 hour): ${link}`,
+    await sendMail(u.email, "Trivyah Task Manager password reset",
+      `Reset your Trivyah Task Manager password (valid 1 hour): ${link}`,
       emailHtml({
         heading: "Password reset",
         intro: `Someone (hopefully you) asked to reset the password for <b>${escHtml(u.username)}</b>. The link below is valid for 1 hour and works once. If this wasn't you, just ignore this mail — nothing changes.`,
@@ -419,8 +425,8 @@ route("POST", "/api/users/(\\d+)/reset-link", async (req, [id]) => {
   const link = `${PUBLIC_URL}/#/reset/${createResetToken(u.id)}`;
   let mailed = false;
   if (smtpConfigured() && u.email) {
-    mailed = await sendMail(u.email, "CoreKit Tracker password reset",
-      `Set your CoreKit Tracker password (valid 1 hour): ${link}`,
+    mailed = await sendMail(u.email, "Trivyah Task Manager password reset",
+      `Set your Trivyah Task Manager password (valid 1 hour): ${link}`,
       emailHtml({
         heading: "Password reset",
         intro: `An admin generated a password reset for your account <b>${escHtml(u.username)}</b>. The link below is valid for 1 hour and works once.`,
@@ -428,6 +434,33 @@ route("POST", "/api/users/(\\d+)/reset-link", async (req, [id]) => {
       }));
   }
   return { json: { link, mailed, expiresInMinutes: 60 } };
+});
+
+// --- RBAC: which roles can see which top-level nav pages/sections.
+// This is a UI-organization layer, not a data security boundary — project data
+// access is still governed entirely by visibleProjectIds()/canSeeProject().
+const RBAC_PAGES = ["dashboard", "command", "products", "clients", "internal", "team"];
+const RBAC_ROLES = ["USER", "DEV", "DEVLEAD", "ADMIN"];
+route("GET", "/api/rbac", () => {
+  const rows = db.prepare("SELECT * FROM page_access").all();
+  const out = {};
+  for (const r of rows) out[r.page] = r.roles.split(",").filter(Boolean);
+  return { json: out };
+});
+route("PUT", "/api/rbac", (req) => {
+  if (req.user.role !== "ADMIN") return { status: 403, json: { error: "Admin only" } };
+  const body = req.body || {};
+  const upsert = db.prepare("INSERT INTO page_access (page, roles) VALUES (?,?) ON CONFLICT(page) DO UPDATE SET roles=excluded.roles");
+  for (const page of RBAC_PAGES) {
+    if (!(page in body)) continue;
+    const roles = new Set((Array.isArray(body[page]) ? body[page] : []).filter((r) => RBAC_ROLES.includes(r)));
+    roles.add("ADMIN"); // admins can never be locked out of a page
+    upsert.run(page, [...roles].join(","));
+  }
+  const rows = db.prepare("SELECT * FROM page_access").all();
+  const out = {};
+  for (const r of rows) out[r.page] = r.roles.split(",").filter(Boolean);
+  return { json: out };
 });
 
 // --- users
@@ -446,11 +479,11 @@ route("POST", "/api/users", async (req) => {
   if (!password) {
     inviteLink = `${PUBLIC_URL}/#/reset/${createResetToken(u.id, 72)}`;
     if (smtpConfigured() && u.email) {
-      mailed = await sendMail(u.email, "You've been added to CoreKit Tracker",
-        `${req.user.displayName} added you to CoreKit Tracker. Set your password: ${inviteLink}`,
+      mailed = await sendMail(u.email, "You've been added to Trivyah Task Manager",
+        `${req.user.displayName} added you to Trivyah Task Manager. Set your password: ${inviteLink}`,
         emailHtml({
           heading: "Welcome to the team",
-          intro: `<b>${escHtml(req.user.displayName)}</b> added you to CoreKit Tracker — projects, issues and kanban for Trivyah Tech. Set your password to get started (the link is valid for 72 hours).`,
+          intro: `<b>${escHtml(req.user.displayName)}</b> added you to Trivyah Task Manager — projects, issues and kanban for Trivyah Tech. Set your password to get started (the link is valid for 72 hours).`,
           rows: [["Your username", u.username], ["Role", u.role]],
           cta: { label: "Set your password", url: inviteLink },
         }));
@@ -503,11 +536,12 @@ route("POST", "/api/pm-projects", (req) => {
   if (!b.name || !b.key) return { status: 400, json: { error: "name and key required" } };
   const key = String(b.key).toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
   if (db.prepare("SELECT 1 FROM projects WHERE key=?").get(key)) return { status: 409, json: { error: "key already exists" } };
-  const r = db.prepare(`INSERT INTO projects (key,name,description,priority,projectStatus,dueDate,assignees,assignedToId,createdDate,modifiedDate,category,targetDate)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`)
+  const r = db.prepare(`INSERT INTO projects (key,name,description,priority,projectStatus,dueDate,assignees,assignedToId,createdDate,modifiedDate,category,targetDate,clientName,clientContactName,clientPhone,clientEmail)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
     .run(key, b.name, b.description || "", b.priority || "Medium", b.projectStatus || "Active",
       b.dueDate ?? null, b.assignees || String(req.user.id), b.assignedTo?.id ?? req.user.id, now(), now(),
-      b.category === "product" ? "product" : "client", b.targetDate ?? null);
+      normCategory(b.category), b.targetDate ?? null,
+      b.clientName || null, b.clientContactName || null, b.clientPhone || null, b.clientEmail || null);
   return { json: projectShape(getProject(r.lastInsertRowid)) };
 });
 
@@ -518,12 +552,16 @@ route("PUT", "/api/pm-projects/(\\d+)", (req, [id]) => {
     (req.user.role === "DEVLEAD" && isProjectMember(p, req.user));
   if (!canEdit) return { status: 403, json: { error: "Only admins, the project owner, or a dev lead on this project can edit it" } };
   const b = req.body || {};
-  db.prepare(`UPDATE projects SET name=?, description=?, priority=?, projectStatus=?, dueDate=?, assignees=?, assignedToId=?, modifiedDate=?, category=?, targetDate=? WHERE id=?`)
+  db.prepare(`UPDATE projects SET name=?, description=?, priority=?, projectStatus=?, dueDate=?, assignees=?, assignedToId=?, modifiedDate=?, category=?, targetDate=?, clientName=?, clientContactName=?, clientPhone=?, clientEmail=? WHERE id=?`)
     .run(b.name ?? p.name, b.description ?? p.description, b.priority ?? p.priority,
       b.projectStatus ?? p.projectStatus, b.dueDate !== undefined ? b.dueDate : p.dueDate,
       b.assignees ?? p.assignees, b.assignedTo?.id ?? p.assignedToId, now(),
-      b.category !== undefined ? (b.category === "product" ? "product" : "client") : (p.category || "client"),
-      b.targetDate !== undefined ? b.targetDate : p.targetDate, p.id);
+      b.category !== undefined ? normCategory(b.category) : (p.category || "client"),
+      b.targetDate !== undefined ? b.targetDate : p.targetDate,
+      b.clientName !== undefined ? b.clientName : p.clientName,
+      b.clientContactName !== undefined ? b.clientContactName : p.clientContactName,
+      b.clientPhone !== undefined ? b.clientPhone : p.clientPhone,
+      b.clientEmail !== undefined ? b.clientEmail : p.clientEmail, p.id);
   // notify people newly added to the project
   if (b.assignees !== undefined) {
     const before = new Set(String(p.assignees || "").split(",").map(Number).filter(Boolean));
@@ -728,6 +766,8 @@ route("POST", "/api/pm-comments", (req) => {
 route("GET", "/api/pm-comments/(\\d+)/image", (req, [id]) => {
   const c = db.prepare("SELECT * FROM comments WHERE id=?").get(Number(id));
   if (!c || !c.imagePath) return { status: 404, json: { error: "not found" } };
+  const s = db.prepare("SELECT projectId FROM stories WHERE id=?").get(c.storyId);
+  if (!s || !canSeeProject(req.user, s.projectId)) return { status: 404, json: { error: "not found" } };
   return { raw: readFileSync(join(FILES_DIR, c.imagePath)), headers: { "Content-Type": c.imageMime || "image/png" } };
 });
 
@@ -781,6 +821,8 @@ route("POST", "/api/files", (req) => {
 route("GET", "/api/files/(\\d+)/download", (req, [id], res) => {
   const a = db.prepare("SELECT * FROM attachments WHERE id=?").get(Number(id));
   if (!a) return { status: 404, json: { error: "not found" } };
+  const s = db.prepare("SELECT projectId FROM stories WHERE id=?").get(a.storyId);
+  if (!s || !canSeeProject(req.user, s.projectId)) return { status: 404, json: { error: "not found" } };
   return { raw: readFileSync(join(FILES_DIR, a.path)), headers: {
     "Content-Type": a.mime, "Content-Disposition": `attachment; filename="${a.filename}"` } };
 });
@@ -794,6 +836,121 @@ route("DELETE", "/api/files/(\\d+)", (req, [id]) => {
   db.prepare("DELETE FROM attachments WHERE id=?").run(Number(id));
   return { json: { deleted: true } };
 });
+
+// --- project-level files (client documents/images/videos)
+const KINDS = new Set(["document", "image", "video"]);
+const projectFileShape = (a) => ({
+  id: a.id, projectId: a.projectId, filename: a.filename, mime: a.mime, size: a.size,
+  kind: a.kind || "document", createdDate: a.createdDate, uploadedBy: userShape(getUser(a.uploadedById)),
+  url: `/api/project-files/${a.id}/download`,
+});
+
+route("GET", "/api/project-files", (req) => {
+  const projectId = Number(req.query.projectId || 0);
+  if (!canSeeProject(req.user, projectId)) return { json: [] };
+  return { json: db.prepare("SELECT * FROM project_files WHERE projectId=? ORDER BY createdDate DESC").all(projectId).map(projectFileShape) };
+});
+
+route("POST", "/api/project-files", (req) => {
+  const { projectId, filename, dataBase64, mime, kind } = req.body || {};
+  if (!projectId || !filename || !dataBase64) return { status: 400, json: { error: "projectId, filename, dataBase64 required" } };
+  const p = getProject(Number(projectId));
+  if (!p || !canSeeProject(req.user, p.id)) return { status: 404, json: { error: "project not found" } };
+  const buf = Buffer.from(dataBase64, "base64");
+  if (buf.length > 25 * 1024 * 1024) return { status: 413, json: { error: "max 25 MB" } };
+  const safe = String(filename).replace(/[^\w.() -]/g, "_").slice(-120);
+  if (!existsSync(FILES_DIR)) mkdirSync(FILES_DIR, { recursive: true });
+  const rel = `p${Date.now()}_${safe}`;
+  writeFileSync(join(FILES_DIR, rel), buf);
+  const r = db.prepare("INSERT INTO project_files (projectId,filename,mime,size,path,kind,uploadedById,createdDate) VALUES (?,?,?,?,?,?,?,?)")
+    .run(p.id, safe, mime || "application/octet-stream", buf.length, rel, KINDS.has(kind) ? kind : "document", req.user.id, now());
+  return { json: projectFileShape(db.prepare("SELECT * FROM project_files WHERE id=?").get(r.lastInsertRowid)) };
+});
+
+route("GET", "/api/project-files/(\\d+)/download", (req, [id]) => {
+  const a = db.prepare("SELECT * FROM project_files WHERE id=?").get(Number(id));
+  if (!a || !canSeeProject(req.user, a.projectId)) return { status: 404, json: { error: "not found" } };
+  return { raw: readFileSync(join(FILES_DIR, a.path)), headers: {
+    "Content-Type": a.mime, "Content-Disposition": `attachment; filename="${a.filename}"` } };
+});
+
+route("DELETE", "/api/project-files/(\\d+)", (req, [id]) => {
+  const a = db.prepare("SELECT * FROM project_files WHERE id=?").get(Number(id));
+  if (!a) return { status: 404, json: { error: "not found" } };
+  if (req.user.role !== "ADMIN" && a.uploadedById !== req.user.id)
+    return { status: 403, json: { error: "Only admins or the uploader can delete a file" } };
+  try { unlinkSync(join(FILES_DIR, a.path)); } catch {}
+  db.prepare("DELETE FROM project_files WHERE id=?").run(Number(id));
+  return { json: { deleted: true } };
+});
+
+// --- shareable showcase links (public, read-only, curated — no comments/history)
+route("POST", "/api/pm-projects/(\\d+)/share", (req, [id]) => {
+  const p = getProject(id);
+  if (!p) return { status: 404, json: { error: "not found" } };
+  const canShare = req.user.role === "ADMIN" || p.assignedToId === req.user.id ||
+    (req.user.role === "DEVLEAD" && isProjectMember(p, req.user));
+  if (!canShare) return { status: 403, json: { error: "Only admins, the project owner, or a dev lead on this project can share it" } };
+  const token = req.body?.revoke ? null : (p.shareToken || randomBytes(18).toString("base64url"));
+  db.prepare("UPDATE projects SET shareToken=? WHERE id=?").run(token, p.id);
+  return { json: projectShape(getProject(p.id)) };
+});
+
+route("POST", "/api/users/(\\d+)/share", (req, [id]) => {
+  const u = getUser(Number(id));
+  if (!u) return { status: 404, json: { error: "not found" } };
+  if (req.user.role !== "ADMIN" && req.user.id !== u.id) return { status: 403, json: { error: "Admin only" } };
+  const token = req.body?.revoke ? null : (u.shareToken || randomBytes(18).toString("base64url"));
+  db.prepare("UPDATE users SET shareToken=? WHERE id=?").run(token, u.id);
+  return { json: { ...userShape(getUser(u.id)), shareToken: token } };
+});
+
+route("GET", "/api/showcase/project/([^/]+)", (req, [token]) => {
+  const p = db.prepare("SELECT * FROM projects WHERE shareToken=?").get(token);
+  if (!p) return { status: 404, json: { error: "not found" } };
+  const stories = db.prepare("SELECT * FROM stories WHERE projectId=? ORDER BY seq DESC").all(p.id);
+  const counts = { Backlog: 0, "In Progress": 0, "In Review": 0, Done: 0 };
+  for (const s of stories) counts[s.storyStatus] = (counts[s.storyStatus] || 0) + 1;
+  const media = db.prepare("SELECT * FROM project_files WHERE projectId=? AND kind IN ('image','video') ORDER BY createdDate DESC")
+    .all(p.id).map((a) => ({ id: a.id, filename: a.filename, kind: a.kind, url: `/api/showcase/project/${token}/file/${a.id}` }));
+  const board = stories.map((s) => ({
+    number: s.number, name: s.name, type: s.type, priority: s.priority,
+    storyStatus: s.storyStatus, dueDate: s.dueDate, module: s.module,
+    assigneeName: getUser(s.assignedToId)?.displayName || null,
+  }));
+  return { json: {
+    name: p.name, description: p.description, key: p.key, priority: p.priority,
+    projectStatus: p.projectStatus, dueDate: p.dueDate, category: p.category,
+    clientName: p.clientName,
+    storyCounts: counts, totalStories: stories.length, media, board,
+  } };
+}, { public: true });
+
+route("GET", "/api/showcase/project/([^/]+)/file/(\\d+)", (req, [token, id]) => {
+  const p = db.prepare("SELECT id FROM projects WHERE shareToken=?").get(token);
+  if (!p) return { status: 404, json: { error: "not found" } };
+  const a = db.prepare("SELECT * FROM project_files WHERE id=? AND projectId=?").get(Number(id), p.id);
+  if (!a) return { status: 404, json: { error: "not found" } };
+  return { raw: readFileSync(join(FILES_DIR, a.path)), headers: { "Content-Type": a.mime } };
+}, { public: true });
+
+route("GET", "/api/showcase/person/([^/]+)", (req, [token]) => {
+  const u = db.prepare("SELECT * FROM users WHERE shareToken=?").get(token);
+  if (!u) return { status: 404, json: { error: "not found" } };
+  const stories = db.prepare("SELECT * FROM stories WHERE assignedToId=?").all(u.id);
+  const projectIds = [...new Set(stories.map((s) => s.projectId))];
+  const projects = projectIds.map((id) => getProject(id)).filter(Boolean).map((p) => ({ name: p.name, key: p.key, category: p.category }));
+  const hist = db.prepare("SELECT storyId, field, newValue, createdDate FROM history WHERE field='storyStatus'").all();
+  const byStory = new Map();
+  for (const h of hist) { if (!byStory.has(h.storyId)) byStory.set(h.storyId, []); byStory.get(h.storyId).push(h); }
+  const analyzed = stories.map((s) => analyzeStory(s, byStory.get(s.id) || []));
+  const done = analyzed.filter((a) => a.storyStatus === "Done");
+  const score = done.reduce((sum, a) => sum + (a.storyPoints ?? a.effortPoints), 0);
+  return { json: {
+    displayName: u.displayName, role: u.role,
+    projects, storiesDone: done.length, storiesTotal: stories.length, score,
+  } };
+}, { public: true });
 
 // --- effort analytics & scoreboard
 route("GET", "/api/analytics", (req) => ({ json: computeAnalytics(req.user, req.query.projectId) }));
@@ -863,4 +1020,4 @@ const server = createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, HOST, () => console.log(`CoreKit Tracker → http://${HOST}:${PORT}`));
+server.listen(PORT, HOST, () => console.log(`Trivyah Task Manager → http://${HOST}:${PORT}`));

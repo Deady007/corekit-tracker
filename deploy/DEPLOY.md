@@ -81,6 +81,18 @@ Snapshots land in `/opt/corekit-backups` (14-day retention). To also keep them o
 
 ## 7. Updating the app later
 
+**Automatic (recommended):** a push to `main` on GitHub deploys automatically via
+`.github/workflows/deploy.yml` — it rsyncs the repo (minus `data/`, `.env` files,
+`.git`) to `/opt/corekit` and restarts the service. One-time setup, in the GitHub
+repo's Settings → Secrets and variables → Actions:
+
+| Secret | Value |
+|---|---|
+| `LIGHTSAIL_HOST` | the server's IP or `corekit.me` |
+| `LIGHTSAIL_USER` | `ubuntu` |
+| `LIGHTSAIL_SSH_KEY` | the full contents of the Lightsail SSH private key (the `ubuntu` user must have passwordless `sudo` for `chown`/`systemctl restart`, which is the Lightsail default) |
+
+**Manual fallback:**
 ```powershell
 scp C:\Users\LENOVO\Downloads\corekit\server.js root@VPS:/opt/corekit/
 scp C:\Users\LENOVO\Downloads\corekit\public\index.html root@VPS:/opt/corekit/public/
@@ -89,7 +101,7 @@ scp C:\Users\LENOVO\Downloads\corekit\public\index.html root@VPS:/opt/corekit/pu
 systemctl restart corekit
 ```
 
-(`data/` is never touched by updates.)
+(`data/` is never touched by updates, either way.)
 
 ## Pointing the Claude MCP at production
 

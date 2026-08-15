@@ -25,6 +25,7 @@ jobs:
           rsync -az --delete \
             --exclude='.git' --exclude='.github' --exclude='data' \
             --exclude='node_modules' --exclude='*.env' \
+            --rsync-path="sudo rsync" \
             -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes" \
             ./ "${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }}:/opt/corekit/"
 

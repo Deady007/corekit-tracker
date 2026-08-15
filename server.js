@@ -159,9 +159,9 @@ function sendMail(to, subject, text, html) {
     const boundary = `ck_${randomBytes(12).toString("hex")}`;
     const body = html
       ? `Content-Type: multipart/alternative; boundary="${boundary}"\r\n\r\n` +
-        `--${boundary}\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n${plain}\r\n\r\n` +
-        `--${boundary}\r\nContent-Type: text/html; charset=utf-8\r\n\r\n${html}\r\n\r\n--${boundary}--`
-      : `Content-Type: text/plain; charset=utf-8\r\n\r\n${plain}`;
+        `--${boundary}\r\nContent-Type: text/plain; charset=utf-8\r\nContent-Transfer-Encoding: 8bit\r\n\r\n${plain}\r\n\r\n` +
+        `--${boundary}\r\nContent-Type: text/html; charset=utf-8\r\nContent-Transfer-Encoding: 8bit\r\n\r\n${html}\r\n\r\n--${boundary}--`
+      : `Content-Type: text/plain; charset=utf-8\r\nContent-Transfer-Encoding: 8bit\r\n\r\n${plain}`;
     const steps = [
       `EHLO ${fromDomain}`,
       `AUTH LOGIN`,
@@ -170,7 +170,7 @@ function sendMail(to, subject, text, html) {
       `MAIL FROM:<${SMTP.from}>`,
       `RCPT TO:<${to}>`,
       `DATA`,
-      (`From: Trivyah Task Manager <${SMTP.from}>\r\nTo: <${to}>\r\nSubject: ${subject}\r\nDate: ${date}\r\nMessage-ID: ${msgId}\r\nMIME-Version: 1.0\r\n${body}`)
+      (`From: Trivyah Task Manager <${SMTP.from}>\r\nTo: <${to}>\r\nReply-To: ${SMTP.from}\r\nSubject: ${subject}\r\nDate: ${date}\r\nMessage-ID: ${msgId}\r\nMIME-Version: 1.0\r\n${body}`)
         .replace(/\r\n\./g, "\r\n..") + `\r\n.`,
     ];
     let i = 0, ok = false, buf = "";
@@ -199,31 +199,30 @@ function createResetToken(userId, hours = 1) {
 }
 const PUBLIC_URL = process.env.COREKIT_PUBLIC_URL || "https://corekit.me";
 
-// --- branded HTML email template (brutalist, table-based, inline styles) ----
+// --- branded HTML email template (calm, table-based, inline styles — kept
+// deliberately plain: heavy styling/caps/color blocks read as spammy to filters)
 const escHtml = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
 function emailHtml({ heading, intro, rows = [], cta }) {
   const rowsHtml = rows.filter((r) => r && r[1] != null && r[1] !== "").map(([k, v]) => `
     <tr>
-      <td style="font-family:'Courier New',monospace;font-size:10px;letter-spacing:2px;color:#8a857c;text-transform:uppercase;padding:7px 14px 7px 0;white-space:nowrap;vertical-align:top">${escHtml(k)}</td>
-      <td style="font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:bold;color:#141414;padding:7px 0">${escHtml(v)}</td>
+      <td style="font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#6e7075;padding:6px 14px 6px 0;white-space:nowrap;vertical-align:top">${escHtml(k)}</td>
+      <td style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;padding:6px 0">${escHtml(v)}</td>
     </tr>`).join("");
-  return `<!doctype html><html><body style="margin:0;padding:0;background-color:#F2EFE8">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#F2EFE8"><tr><td align="center" style="padding:32px 14px">
-<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;max-width:540px">
-  <tr><td style="background-color:#141414;padding:20px 26px">
-    <span style="font-family:'Arial Black',Arial,sans-serif;font-size:24px;font-weight:900;color:#F2EFE8;letter-spacing:1px">CORE<span style="color:#FFD900">KIT</span></span>
-    <div style="font-family:'Courier New',monospace;font-size:10px;color:#8f8a80;letter-spacing:4px;margin-top:5px">TRIVYAH TECH &middot; TRACKER</div>
+  return `<!doctype html><html><body style="margin:0;padding:0;background-color:#ECEDF0">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#ECEDF0"><tr><td align="center" style="padding:32px 14px">
+<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;max-width:520px">
+  <tr><td style="padding:0 4px 18px">
+    <span style="font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:bold;color:#1a1a1a">Trivyah <span style="color:#FF7A00">Task Manager</span></span>
   </td></tr>
-  <tr><td style="background-color:#FFD900;height:7px;font-size:0;line-height:0">&nbsp;</td></tr>
-  <tr><td style="background-color:#ffffff;border:3px solid #141414;border-top:none;padding:28px 26px">
-    <div style="font-family:'Arial Black',Arial,sans-serif;font-size:18px;font-weight:900;color:#141414;text-transform:uppercase;letter-spacing:.5px">${escHtml(heading)}</div>
-    <p style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#3a3a3a;line-height:1.6;margin:14px 0 6px">${intro}</p>
-    ${rowsHtml ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:14px 0 6px;border-top:2px solid #E9E5DB">${rowsHtml}</table>` : ""}
-    ${cta ? `<div style="margin-top:22px"><a href="${escHtml(cta.url)}" style="display:inline-block;background-color:#FFD900;color:#141414;border:3px solid #141414;padding:13px 26px;font-family:'Courier New',monospace;font-size:13px;font-weight:bold;letter-spacing:1px;text-decoration:none;text-transform:uppercase">${escHtml(cta.label)} &rarr;</a></div>` : ""}
+  <tr><td style="background-color:#ffffff;border-radius:12px;padding:32px">
+    <p style="font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:bold;color:#1a1a1a;margin:0 0 12px">${escHtml(heading)}</p>
+    <p style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#3a3a3a;line-height:1.6;margin:0 0 4px">${intro}</p>
+    ${rowsHtml ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:16px 0 4px;border-top:1px solid #eceef1">${rowsHtml}</table>` : ""}
+    ${cta ? `<div style="margin-top:24px"><a href="${escHtml(cta.url)}" style="display:inline-block;background-color:#FF7A00;color:#ffffff;border-radius:8px;padding:12px 24px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:bold;text-decoration:none">${escHtml(cta.label)}</a></div>` : ""}
   </td></tr>
-  <tr><td style="padding:16px 6px;font-family:'Courier New',monospace;font-size:10px;color:#8f8a80;letter-spacing:1px">
-    SENT BY COREKIT TRACKER &middot; <a href="${PUBLIC_URL}" style="color:#8f8a80">corekit.me</a> &middot; YOU'RE GETTING THIS BECAUSE YOU'RE ON THE TEAM
+  <tr><td style="padding:18px 6px 0;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#8a8d93;line-height:1.5">
+    Sent by Trivyah Task Manager (<a href="${PUBLIC_URL}" style="color:#8a8d93">${PUBLIC_URL.replace(/^https?:\/\//, "")}</a>) because you have an account on the team. If this wasn't expected, you can ignore this email.
   </td></tr>
 </table></td></tr></table></body></html>`;
 }

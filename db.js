@@ -37,9 +37,11 @@ PRAGMA foreign_keys = ON;
     db.exec("UPDATE history SET field='status' WHERE field='storyStatus'");
     db.exec("UPDATE history SET field='tag' WHERE field='module'");
   }
-  // indexes survive a table rename under their old names; drop them so the
-  // CREATE INDEX statements below don't leave a duplicate set behind
-  for (const i of ["idx_stories_project", "idx_stories_assignee", "idx_attach_story", "idx_history_story"])
+  // drop indexes that outlived what they indexed: the pre-rename names (which
+  // survive a table rename, so the CREATE INDEX statements below would leave a
+  // duplicate set behind) and the two from the retired showcase-link feature
+  for (const i of ["idx_stories_project", "idx_stories_assignee", "idx_attach_story",
+                   "idx_history_story", "idx_projects_share", "idx_users_share"])
     db.exec(`DROP INDEX IF EXISTS ${i}`);
 }
 

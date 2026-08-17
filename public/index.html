@@ -256,10 +256,17 @@ td.mono{font-size:11.5px}
 /* ---- roles ---- */
 
 /* ---- split view: details / board on the left, file manager on the right ---- */
-.split{display:grid;grid-template-columns:40% 60%;gap:16px;align-items:start}
-.split.wide{grid-template-columns:1fr}
-.split.wide .split-right{display:none}
-.split-left,.split-right{min-width:0}
+/* files live in a slide-over drawer, so the board keeps its full width */
+.drawer.wide{width:70vw;max-width:96vw}
+.drawer.wide .dbody{padding:0;display:flex}
+/* collapsed handle: a slim tab welded to the right edge */
+.fmtab{position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:40;
+  display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;
+  padding:15px 7px;border:var(--bd);border-right:none;border-radius:var(--radius) 0 0 var(--radius);
+  background:var(--white);box-shadow:-3px 0 12px rgba(15,15,15,.09);color:var(--ink)}
+.fmtab:hover{background:var(--paper2)}
+.fmtab .lbl{writing-mode:vertical-rl;text-orientation:mixed;font-family:var(--sans);
+  font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
 .bigpanel{position:fixed;inset:24px;z-index:51;background:var(--paper);border:var(--bd);border-radius:var(--radius);
   box-shadow:0 20px 50px rgba(15,15,15,.22);display:none;flex-direction:column;overflow:hidden}
 .bigpanel.open{display:flex}
@@ -337,8 +344,8 @@ td.mono{font-size:11.5px}
   .pcard .foot .stamp{font-size:7.5px;padding:1px 4px}
   .pcard .foot .who{width:16px;height:16px;font-size:7px}
 
-  /* the 40/60 split stacks — details/board first, files under it */
-  .split{grid-template-columns:1fr}
+  .drawer.wide{width:96vw}
+  .fmtab{top:auto;bottom:78px;transform:none}
   .bigpanel{inset:0;border-radius:0}
   .bigpanel .bp-body{grid-template-columns:1fr;overflow-y:auto}
   .bigpanel .bp-left{border-right:none;border-bottom:var(--bd)}
@@ -383,7 +390,6 @@ const isPast=(d)=>d&&new Date(d)<new Date(new Date().toDateString());
 
 let ME=null, USERS=[], PROJECTS=[], TASKS=[], NOTIFS=[], BOARD_STORIES=[], BOARD_CRIT=new Map(), RBAC={}, CUSTOMERS=[];
 let FILTER={assignee:"",q:""};
-let BOARD_WIDE=false; // true = kanban takes the full width, file manager hidden
 // role ladder — the four built-in rungs plus any custom role, which inherits
 // the rank of the rung it's based on. Filled from /api/roles at boot.
 const BUILTIN_ROLES=["TEAMMATE","LEAD","ADMIN","SUPERADMIN"];
@@ -427,7 +433,7 @@ function route(){
   if(h.startsWith("#/roles")) return {view:"roles"};
   return {view:"dashboard"};
 }
-window.addEventListener("hashchange",()=>render());
+window.addEventListener("hashchange",()=>{closePanels();render();});
 
 // ---------- boot ----------
 async function boot(){
@@ -506,6 +512,7 @@ function render(){
   </div>
   <div class="overlay" id="overlay" data-act="close"></div>
   <div class="drawer" id="drawer"></div>
+  <div class="drawer wide" id="fmdrawer"></div>
   <div class="modal" id="modal"></div>
   <div class="bigpanel" id="bigpanel"></div>`;
   if(r.view!=="board"&&r.view!=="roles"&&r.view!=="pages"&&!canSeePage(r.view)){location.hash="#/dashboard";return;}
@@ -520,7 +527,7 @@ function render(){
   else if(r.view==="roles"){if(!can("ADMIN")){location.hash="#/dashboard";return;}renderRoleDefs();}
   else renderBoard(r.projectId);
 }
-function closePanels(){$("#overlay")?.classList.remove("open");$("#drawer")?.classList.remove("open");$("#modal")?.classList.remove("open");$("#bigpanel")?.classList.remove("open");$("aside")?.classList.remove("open");}
+function closePanels(){$("#overlay")?.classList.remove("open");$("#drawer")?.classList.remove("open");$("#fmdrawer")?.classList.remove("open");$("#modal")?.classList.remove("open");$("#bigpanel")?.classList.remove("open");$("aside")?.classList.remove("open");}
 
 // ---------- global event delegation (robust: no per-node handlers) ----------
 document.addEventListener("click",async(e)=>{
@@ -1294,28 +1301,34 @@ async function renderBoard(projectId){
   BOARD_CRIT=new Map((boardAnalytics?.tasks||[]).map(a=>[a.id,a]));
   $("#tbActions").innerHTML=`
     <input type="search" id="fq" placeholder="Search…" value="${esc(FILTER.q)}">
-    <button id="fmToggle">${BOARD_WIDE?"Show files":"Hide files"}</button>
     ${(can("ADMIN")||p.assignedTo?.id===ME.id||(can("LEAD")&&String(p.assignees||"").split(",").map(Number).includes(ME.id)))?`<button data-act="project-settings" data-id="${projectId}">⚙ Settings</button>`:""}
     ${can("LEAD")?`<button class="primary" data-act="new-task" data-project="${projectId}">+ New task</button>`:""}`;
   $("#main").innerHTML=`
-  <div class="split ${BOARD_WIDE?"wide":""}" id="boardSplit">
-    <div class="split-left">
-      <div class="board-head">
-        <select id="fAssignee" style="width:auto"><option value="">everyone</option>
-          ${USERS.map(u=>`<option value="${u.id}" ${String(FILTER.assignee)===String(u.id)?"selected":""}>${esc(u.displayName)}</option>`).join("")}</select>
-      </div>
-      <div class="ktabs">${STATUSES.map(st=>`
-        <button class="fchip ${(FILTER.mcol||"To Do")===st?"on":""}" data-mcol="${st}">${st}<span class="kn" id="kn-${stampCls(st)}">0</span></button>`).join("")}</div>
-      <div class="kanban">${STATUSES.map(st=>`
-        <div class="kcol ${(FILTER.mcol||"To Do")===st?"active":""}" data-status="${st}">
-          <div class="khead"><h4>${st}</h4><span class="cnt" style="--kc:${KC[st]};background:${KC[st]}" id="cnt-${stampCls(st)}"></span></div>
-          <div class="klist" data-status="${st}"></div>
-        </div>`).join("")}</div>
-    </div>
-    <div class="split-right" id="boardFiles"></div>
-  </div>`;
-  if(!BOARD_WIDE) fileManager($("#boardFiles"),"project",projectId,{});
-  $("#fmToggle").onclick=()=>{BOARD_WIDE=!BOARD_WIDE;renderBoard(projectId);};
+  <div class="board-head">
+    <select id="fAssignee" style="width:auto"><option value="">everyone</option>
+      ${USERS.map(u=>`<option value="${u.id}" ${String(FILTER.assignee)===String(u.id)?"selected":""}>${esc(u.displayName)}</option>`).join("")}</select>
+  </div>
+  <div class="ktabs">${STATUSES.map(st=>`
+    <button class="fchip ${(FILTER.mcol||"To Do")===st?"on":""}" data-mcol="${st}">${st}<span class="kn" id="kn-${stampCls(st)}">0</span></button>`).join("")}</div>
+  <div class="kanban">${STATUSES.map(st=>`
+    <div class="kcol ${(FILTER.mcol||"To Do")===st?"active":""}" data-status="${st}">
+      <div class="khead"><h4>${st}</h4><span class="cnt" style="--kc:${KC[st]};background:${KC[st]}" id="cnt-${stampCls(st)}"></span></div>
+      <div class="klist" data-status="${st}"></div>
+    </div>`).join("")}</div>
+  <button class="fmtab" id="fmTab" title="Project files"><span>🗂</span><span class="lbl">Files</span></button>`;
+  // the file tree is only fetched the first time the drawer is pulled out, and
+  // stays mounted across board re-renders so you keep your place in the folders
+  $("#fmTab").onclick=()=>{
+    const d=$("#fmdrawer");
+    if(d.dataset.project!==String(projectId)){
+      d.innerHTML=`<div class="dhead"><span class="num">Project files</span>
+        <button class="bare" data-act="close" style="background:var(--paper);box-shadow:none">✕</button></div>
+        <div class="dbody"><div id="boardFiles" style="flex:1;min-width:0;display:flex"></div></div>`;
+      fileManager($("#boardFiles"),"project",projectId,{});
+      d.dataset.project=String(projectId);
+    }
+    d.classList.add("open");$("#overlay").classList.add("open");
+  };
   $$("[data-mcol]").forEach(b=>b.onclick=()=>{
     FILTER.mcol=b.dataset.mcol;
     $$("[data-mcol]").forEach(x=>x.classList.toggle("on",x===b));

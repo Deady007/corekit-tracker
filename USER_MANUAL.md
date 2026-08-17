@@ -73,6 +73,7 @@ Open any project to see its board: **To Do → In Progress → In Review → Don
 - **+ New task** creates a task *(LEAD and above — teammates work tasks, leads hand them out)*.
 - Filter by assignee or free-text search.
 - On mobile, the board becomes one column at a time with a tab strip.
+- The **🗂 Files** tab on the right edge slides the project's file manager out over the board (§6). It covers 70% of the screen; close it with ✕, Esc, or by clicking outside it.
 
 ### The task drawer
 Click any card to open its full detail drawer:
@@ -87,7 +88,7 @@ Click any card to open its full detail drawer:
 
 ## 6. Files
 
-Every **project** and every **customer** has its own file area with nested folders:
+Every **project** and every **customer** has its own file area with nested folders. On a project board, open it from the **🗂 Files** tab on the right edge; for a customer it is on the customer's detail page.
 
 - Create folders, upload files (25 MB each), rename, move, copy/paste, and multi-select.
 - Drag items onto a folder to move them.

@@ -137,10 +137,19 @@ const getUser = (id) => id == null ? null : db.prepare("SELECT * FROM users WHER
 const CATEGORIES = new Set(["client", "internal"]);
 const normCategory = (c) => (CATEGORIES.has(c) ? c : "client");
 
+// customer engagement status reuses the project vocabulary
+const CUSTOMER_STATUSES = ["Active", "On Hold", "Completed"];
+const normCustomerStatus = (s) => (CUSTOMER_STATUSES.includes(s) ? s : "Active");
+
 const customerShape = (c) => c && {
   id: c.id, customerNumber: c.customerNumber, name: c.name,
   contactName: c.contactName || null, phone: c.phone || null, email: c.email || null,
   address: c.address || null, notes: c.notes || null,
+  department: c.department || null,
+  projectManagerId: c.projectManagerId ?? null,
+  projectManager: userShape(getUser(c.projectManagerId)),
+  startDate: c.startDate || null,
+  currentStatus: c.currentStatus || "Active",
   createdDate: c.createdDate, modifiedDate: c.modifiedDate,
 };
 const getCustomer = (id) => id == null ? null : db.prepare("SELECT * FROM customers WHERE id=?").get(id);
@@ -673,9 +682,13 @@ route("POST", "/api/customers", (req) => {
   if (!atLeast(req.user, "LEAD")) return denied("LEAD");
   const b = req.body || {};
   if (!b.name) return { status: 400, json: { error: "name required" } };
+  const pmId = b.projectManagerId ? Number(b.projectManagerId) : null;
+  if (pmId && !getUser(pmId)) return { status: 400, json: { error: "project manager not found" } };
   const num = nextCustomerNumber();
-  const r = db.prepare("INSERT INTO customers (customerNumber,name,contactName,phone,email,address,notes,createdDate,modifiedDate) VALUES (?,?,?,?,?,?,?,?,?)")
-    .run(num, b.name, b.contactName || null, b.phone || null, b.email || null, b.address || null, b.notes || null, now(), now());
+  const r = db.prepare(`INSERT INTO customers (customerNumber,name,contactName,phone,email,address,notes,
+    department,projectManagerId,startDate,currentStatus,createdDate,modifiedDate) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+    .run(num, b.name, b.contactName || null, b.phone || null, b.email || null, b.address || null, b.notes || null,
+      b.department || null, pmId, b.startDate || null, normCustomerStatus(b.currentStatus), now(), now());
   return { json: customerShape(getCustomer(r.lastInsertRowid)) };
 });
 
@@ -684,10 +697,18 @@ route("PUT", "/api/customers/(\\d+)", (req, [id]) => {
   const c = getCustomer(id);
   if (!c) return { status: 404, json: { error: "not found" } };
   const b = req.body || {};
-  db.prepare("UPDATE customers SET name=?, contactName=?, phone=?, email=?, address=?, notes=?, modifiedDate=? WHERE id=?")
+  const pmId = b.projectManagerId !== undefined
+    ? (b.projectManagerId ? Number(b.projectManagerId) : null) : c.projectManagerId;
+  if (pmId && !getUser(pmId)) return { status: 400, json: { error: "project manager not found" } };
+  db.prepare(`UPDATE customers SET name=?, contactName=?, phone=?, email=?, address=?, notes=?,
+    department=?, projectManagerId=?, startDate=?, currentStatus=?, modifiedDate=? WHERE id=?`)
     .run(b.name ?? c.name, b.contactName !== undefined ? b.contactName : c.contactName,
       b.phone !== undefined ? b.phone : c.phone, b.email !== undefined ? b.email : c.email,
-      b.address !== undefined ? b.address : c.address, b.notes !== undefined ? b.notes : c.notes, now(), c.id);
+      b.address !== undefined ? b.address : c.address, b.notes !== undefined ? b.notes : c.notes,
+      b.department !== undefined ? (b.department || null) : c.department, pmId,
+      b.startDate !== undefined ? (b.startDate || null) : c.startDate,
+      b.currentStatus !== undefined ? normCustomerStatus(b.currentStatus) : (c.currentStatus || "Active"),
+      now(), c.id);
   return { json: customerShape(getCustomer(c.id)) };
 });
 

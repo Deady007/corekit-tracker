@@ -244,6 +244,14 @@ try { db.exec("ALTER TABLE projects ADD COLUMN customerId INTEGER REFERENCES cus
 try { db.exec("ALTER TABLE customers ADD COLUMN address TEXT"); } catch {}
 try { db.exec("ALTER TABLE customers ADD COLUMN notes TEXT"); } catch {}
 
+// migration: engagement fields — which department the work sits under, who
+// manages it, when it started, and where it stands. currentStatus reuses the
+// project vocabulary (Active | On Hold | Completed) rather than inventing one.
+try { db.exec("ALTER TABLE customers ADD COLUMN department TEXT"); } catch {}
+try { db.exec("ALTER TABLE customers ADD COLUMN projectManagerId INTEGER REFERENCES users(id)"); } catch {}
+try { db.exec("ALTER TABLE customers ADD COLUMN startDate TEXT"); } catch {}
+try { db.exec("ALTER TABLE customers ADD COLUMN currentStatus TEXT NOT NULL DEFAULT 'Active'"); } catch {}
+
 export const nextCustomerNumber = () => {
   let max = 0;
   for (const r of db.prepare("SELECT customerNumber FROM customers").all()) {

@@ -1055,20 +1055,28 @@ function renderInternal(){
 
 // ---------- customers ----------
 let CUSTOMER_Q="";
+// customer engagement status — same vocabulary as project status
+const CUSTOMER_STATUSES=["Active","On Hold","Completed"];
+const userOptions=(selectedId)=>`<option value="">— none —</option>`+
+  USERS.map(u=>`<option value="${u.id}" ${String(selectedId)===String(u.id)?"selected":""}>${esc(u.displayName)}</option>`).join("");
+
 async function renderCustomers(){
   CUSTOMERS=await api("/api/customers");
   const paint=()=>{
     const q=CUSTOMER_Q.toLowerCase();
-    const list=CUSTOMERS.filter(c=>!q||(c.customerNumber+" "+c.name+" "+(c.contactName||"")).toLowerCase().includes(q));
+    const list=CUSTOMERS.filter(c=>!q||(c.customerNumber+" "+c.name+" "+(c.contactName||"")+" "+(c.department||"")+" "+(c.projectManager?.displayName||"")).toLowerCase().includes(q));
     $("#custBody").innerHTML=`<div class="block"><div class="bhead"><h2>Customers</h2><div class="note">${CUSTOMERS.length} total · click a row to open its details &amp; files</div></div>
-    ${list.length?`<div style="overflow-x:auto"><table class="tbl-compact"><thead><tr><th>Number</th><th>Name</th><th>Contact</th><th>Phone</th><th>Email</th><th>Projects</th><th></th></tr></thead><tbody>
+    ${list.length?`<div style="overflow-x:auto"><table class="tbl-compact"><thead><tr><th>Number</th><th>Name</th><th>Department</th><th>Project manager</th><th>Start</th><th>Status</th><th>Contact</th><th>Phone</th><th>Projects</th><th></th></tr></thead><tbody>
     ${list.map(c=>`<tr data-copen="${c.id}" style="cursor:pointer">
       <td class="mono">${esc(c.customerNumber)}</td>
       <td><b>${esc(c.name)}</b></td>
-      <td>${esc(c.contactName||"—")}</td>
-      <td class="mono">${esc(c.phone||"—")}</td>
-      <td>${esc(c.email||"—")}</td>
-      <td class="mono">${c.projectCount}</td>
+      <td data-l="Department">${esc(c.department||"—")}</td>
+      <td data-l="Project manager">${esc(c.projectManager?.displayName||"—")}</td>
+      <td class="mono" data-l="Start">${esc(c.startDate||"—")}</td>
+      <td data-l="Status"><span class="stamp">${esc(c.currentStatus||"Active")}</span></td>
+      <td data-l="Contact">${esc(c.contactName||"—")}</td>
+      <td class="mono" data-l="Phone">${esc(c.phone||"—")}</td>
+      <td class="mono" data-l="Projects">${c.projectCount}</td>
       <td style="white-space:nowrap">
         ${can("ADMIN")?`<button class="bare" style="color:var(--red)" data-cdel="${c.id}" data-name="${esc(c.name)}">delete</button>`:""}
       </td></tr>`).join("")}</tbody></table></div>`
@@ -1096,6 +1104,10 @@ function customerModal(c){
     <div class="row2"><div><label>Contact person</label><input id="cuContact" value="${esc(c?.contactName||"")}"></div>
     <div><label>Phone</label><input id="cuPhone" value="${esc(c?.phone||"")}"></div></div>
     <label>Email</label><input id="cuEmail" type="email" value="${esc(c?.email||"")}">
+    <div class="row2"><div><label>Department</label><input id="cuDept" value="${esc(c?.department||"")}" placeholder="e.g. Finance, IT"></div>
+    <div><label>Project manager</label><select id="cuPm">${userOptions(c?.projectManagerId)}</select></div></div>
+    <div class="row2"><div><label>Start date</label><input id="cuStart" type="date" value="${c?.startDate||""}"></div>
+    <div><label>Current status</label><select id="cuStatus">${CUSTOMER_STATUSES.map(s=>`<option ${(c?.currentStatus||"Active")===s?"selected":""}>${s}</option>`).join("")}</select></div></div>
     <label>Address</label><textarea id="cuAddress" style="min-height:66px">${esc(c?.address||"")}</textarea>
     <div class="formerr" id="cuerr"></div></div>
   <div class="mfoot"><button data-act="close">Cancel</button><button class="primary" id="cusave">${isNew?"Create":"Save"}</button></div>`;
@@ -1103,7 +1115,8 @@ function customerModal(c){
   $("#cusave").onclick=async()=>{
     if(!$("#cuName").value.trim()){$("#cuerr").textContent="Name required";return;}
     try{
-      const body=JSON.stringify({name:$("#cuName").value,contactName:$("#cuContact").value||null,phone:$("#cuPhone").value||null,email:$("#cuEmail").value||null,address:$("#cuAddress").value||null});
+      const body=JSON.stringify({name:$("#cuName").value,contactName:$("#cuContact").value||null,phone:$("#cuPhone").value||null,email:$("#cuEmail").value||null,address:$("#cuAddress").value||null,
+        department:$("#cuDept").value||null,projectManagerId:$("#cuPm").value||null,startDate:$("#cuStart").value||null,currentStatus:$("#cuStatus").value});
       if(isNew) await api("/api/customers",{method:"POST",body});
       else await api("/api/customers/"+c.id,{method:"PUT",body});
       CUSTOMERS=await api("/api/customers");closePanels();render();
@@ -1131,6 +1144,10 @@ function customerPanel(c){
           <label>Contact person</label><input id="cpContact" value="${esc(c.contactName||"")}" ${canEdit?"":"disabled"}>
           <label>Phone number</label><input id="cpPhone" value="${esc(c.phone||"")}" ${canEdit?"":"disabled"}>
           <label>Email</label><input id="cpEmail" type="email" value="${esc(c.email||"")}" ${canEdit?"":"disabled"}>
+          <label>Department</label><input id="cpDept" value="${esc(c.department||"")}" placeholder="e.g. Finance, IT" ${canEdit?"":"disabled"}>
+          <label>Project manager</label><select id="cpPm" ${canEdit?"":"disabled"}>${userOptions(c.projectManagerId)}</select>
+          <div class="row2"><div><label>Start date</label><input id="cpStart" type="date" value="${c.startDate||""}" ${canEdit?"":"disabled"}></div>
+          <div><label>Current status</label><select id="cpStatus" ${canEdit?"":"disabled"}>${CUSTOMER_STATUSES.map(s=>`<option ${(c.currentStatus||"Active")===s?"selected":""}>${s}</option>`).join("")}</select></div></div>
           <label>Address</label><textarea id="cpAddress" style="min-height:70px" ${canEdit?"":"disabled"}>${esc(c.address||"")}</textarea>
           <label>Notes</label><textarea id="cpNotes" style="min-height:70px" ${canEdit?"":"disabled"}>${esc(c.notes||"")}</textarea>
           <div class="formerr" id="cperr"></div>
@@ -1153,7 +1170,9 @@ function customerPanel(c){
       await api("/api/customers/"+c.id,{method:"PUT",body:JSON.stringify({
         name:$("#cpName").value,contactName:$("#cpContact").value||null,
         phone:$("#cpPhone").value||null,email:$("#cpEmail").value||null,
-        address:$("#cpAddress").value||null,notes:$("#cpNotes").value||null})});
+        address:$("#cpAddress").value||null,notes:$("#cpNotes").value||null,
+        department:$("#cpDept").value||null,projectManagerId:$("#cpPm").value||null,
+        startDate:$("#cpStart").value||null,currentStatus:$("#cpStatus").value})});
       CUSTOMERS=await api("/api/customers");
       $("#cpSave").textContent="Saved ✓";
       setTimeout(()=>{const b=$("#cpSave");if(b)b.textContent="Save details";},1400);

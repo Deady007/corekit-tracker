@@ -1,19 +1,21 @@
 # Trivyah Task Manager
 
-Lightweight project management for Trivyah Tech — projects, stories/issues/bugs, kanban board, role-aware dashboards, file attachments, and notifications, in a clean Notion-style UI. **Zero npm dependencies**: one Node process, one SQLite file (built-in `node:sqlite`), no build step.
+Lightweight task tracking for any kind of work — projects, tasks, a board, role-aware dashboards, a file manager, and notifications, in a clean Notion-style UI. **Zero npm dependencies**: one Node process, one SQLite file (built-in `node:sqlite`), no build step.
 
 ## Roles & visibility
 
-- **ADMIN / DEVLEAD** — see all projects; dashboard shows team load + project health + personal queue.
-- **DEV / USER** — see only projects they belong to (project assignee list, project owner, or having stories there); dashboard shows their own work.
+A four-rung ladder, each rung inheriting everything below it:
 
-## Attachments
+- **TEAMMATE** — works the board: view, update and comment on tasks in projects they belong to.
+- **LEAD** — also creates tasks, assigns them, and creates projects and customers.
+- **ADMIN** — also manages users, sees every project, and deletes work items.
+- **SUPERADMIN** — also sets/resets passwords and deletes users.
 
-Upload documents on any story (drawer → Attachments, max 25 MB). Files live in `data/files/`.
+TEAMMATE and LEAD see only projects they belong to (project owner, listed member, or having a task there). ADMIN and above see everything.
 
-## Import from Sprint0
+## Projects, customers & files
 
-`node import-sprint0.js` pulls all users, projects, and stories your Sprint0 session can see (cookie resolved the same way as sprint0-mcp). Idempotent — story numbers are preserved and existing records are skipped. Imported users need a password reset by an admin before they can log in.
+Projects are either **client** (must be attached to a customer record) or **internal**. Every project and every customer gets a file area — nested folders, upload/rename/move/copy, 25 MB per file. Files live in `data/files/`; tasks also take direct attachments and pasted screenshots on comments.
 
 ## Run
 
@@ -28,19 +30,20 @@ Data lives in `data/corekit.db`. Back it up by copying the file.
 
 To share with the team on your LAN, run it on any machine and open `http://<that-machine-ip>:4580`. Change the port with `COREKIT_PORT`.
 
-## Sprint0-compatible API
+## API
 
-The REST API intentionally mirrors app.sprint0.dev, so existing tooling works by pointing `SPRINT0_BASE_URL` at this server:
+`POST /api/auth/login` `{username,password}` (sets `JSESSIONID` cookie), `GET /api/auth/status`, `POST /api/auth/logout`, `POST /api/auth/forgot`, `POST /api/auth/reset`, `GET/POST/PUT/DELETE /api/users`, `GET/POST/PUT/DELETE /api/customers`, `GET/POST/PUT/DELETE /api/projects`, `GET/POST/PUT/DELETE /api/tasks` (`?projectId=`), `GET/POST /api/comments` (`?taskId=`), `GET /api/history` (`?taskId=`), `GET/POST/DELETE /api/files` (`?taskId=`), `GET/POST/PUT/DELETE /api/fs` (file manager), `GET /api/analytics`, `GET/PUT /api/rbac`, `GET /api/roles`, `GET /api/notifications/user/{id}`.
 
-- **sprint0-mcp** (Claude integration): set `SPRINT0_BASE_URL=http://localhost:4580` and either a cookie or `sprint0.credentials.json` — auto-relogin works here since accounts have real passwords.
-- **Capacity Control dashboard**: same `SPRINT0_BASE_URL` override.
+`PUT` accepts partial objects. Sessions last 30 days of inactivity.
 
-Endpoints: `POST /api/auth/login` `{username,password}` (sets `JSESSIONID` cookie), `GET /api/auth/status`, `POST /api/auth/logout`, `GET/POST/PUT /api/users`, `GET/POST/PUT/DELETE /api/pm-projects`, `GET/POST/PUT/DELETE /api/pm-stories` (`?projectId=&type=`), `GET/POST /api/pm-comments` (`?storyId=`), `GET /api/notifications/user/{id}`.
+> **Renamed in this version.** The `stories` table is now `tasks`, `storyStatus` is now `status`, `module` is now `tag`, and every `storyId` is now `taskId`; the `/api/pm-*` routes lost their prefix (`/api/pm-stories` → `/api/tasks`). `db.js` migrates an existing database automatically on first boot. Any external client calling the old paths or field names must be updated.
 
-Improvements over Sprint0: `PUT` accepts partial objects, `type` may be omitted to get all types, sessions last 30 days of inactivity, and passwords mean no cookie expiry dance.
+## Email
+
+Optional. Set `COREKIT_SMTP_HOST/PORT/USER/PASS/FROM` for invites, password resets and notification mail. Without it, invite and reset links are returned in the API response for an admin to share manually. Per-project, per-type notification toggles live under a project's ⚙ Settings.
 
 ## Structure
 
-- `server.js` — HTTP + API + static, ~350 lines
-- `db.js` — schema (users, sessions, projects, stories, comments, notifications)
-- `public/index.html` — the whole UI (login, projects, kanban with drag & drop, story drawer with comments, team admin, notification inbox)
+- `server.js` — HTTP + API + static
+- `db.js` — schema and migrations (users, sessions, projects, customers, tasks, comments, files, notifications, history)
+- `public/index.html` — the whole UI (login, projects, board with drag & drop, task drawer, file manager, team admin, notification inbox)

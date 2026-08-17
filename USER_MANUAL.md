@@ -1,6 +1,6 @@
 # Trivyah Task Manager — User Manual
 
-A lightweight project & task tracker for Trivyah Tech: projects, stories/issues/bugs, a kanban board, dashboards, file attachments, notifications, and shareable read-only links — all in one app, no login required to view a shared link.
+A lightweight project & task tracker for any kind of work: projects, tasks, a board, dashboards, a file manager, customers, and notifications — all in one app.
 
 ---
 
@@ -15,122 +15,123 @@ Go to the app URL (e.g. `https://corekit.me` or `http://localhost:4580`) and sig
 
 ## 2. Roles
 
-| Role | What they see |
-|---|---|
-| **ADMIN** | Everything — every project, Team page, Access Control page, all analytics. |
-| **DEVLEAD** | Every project they're a member/owner of, plus the Command dashboard. |
-| **DEV** | Only projects they belong to (assigned owner, listed member, or have a story on). |
-| **USER** | Same project-level visibility as DEV. |
+A four-rung ladder — each rung can do everything the rungs below it can.
 
-Project visibility is **always** enforced this way, regardless of anything set on the Access Control page (see §8) — that page only controls which top-level *sections* of the app a role can navigate to, not which individual projects/tasks they can see.
+| Role | What it adds |
+|---|---|
+| **TEAMMATE** | View and update tasks on their projects, move them across the board, comment, use the file manager. |
+| **LEAD** | Create tasks, assign tasks to people, create projects and customers, edit projects they're a member of. |
+| **ADMIN** | Create and edit users, see and edit **every** project, delete projects/tasks/files, set page permissions. |
+| **SUPERADMIN** | Set or reset passwords, send reset links, delete users, grant any role. |
+
+TEAMMATE and LEAD see only the projects they belong to (project owner, listed member, or having a task there). Project visibility is **always** enforced this way, regardless of anything set on the Access Control page (§8) — that page only controls which top-level *sections* a role can navigate to, not which individual projects or tasks they can see.
 
 ---
 
 ## 3. The sidebar
 
-- **Dashboard** — your personal queue: everything assigned to you, most urgent first.
-- **Command** *(ADMIN/DEVLEAD only by default)* — team load, project health, effort scoreboard, and critical/overdue items across all visible projects.
-- **Product Lab** — CoreKit's own products (internal product line, e.g. SCM/HRMS/POS), tracked with yearly progress bars and suggestions.
-- **Clients** — client project work, grouped by client name.
-- **Internal Works** — non-client internal projects (hiring, ops, internal tooling, admin work).
-- **Team** *(ADMIN only)* — manage user accounts.
-- **Access Control** *(ADMIN only)* — role-based page permissions (§8).
+- **My Dashboard** — your personal queue: everything assigned to you, most urgent first.
+- **All Tasks** — every task you can see, with search and filters.
+- **Admin Dashboard** *(LEAD and above by default)* — team load, project health, effort scoreboard, and critical/overdue items.
+- **Client Projects** — billable work, each attached to a customer.
+- **Internal Projects** — non-client work (hiring, ops, admin, personal workstreams).
+- **Customers** *(LEAD and above by default)* — the customer directory and their files.
+- **User Management** *(ADMIN and above)* — manage user accounts.
+- **Access Control** *(ADMIN and above)* — role-based page permissions (§8).
 
-Below the nav, the sidebar lists every project you can see, split into Products / Clients / Internal.
+Below the nav, the sidebar lists every project you can see, split into Clients / Internal.
 
 ---
 
 ## 4. Projects
 
 ### Creating a project
-Use the "+ New…" button on the Clients, Products, or Internal Works page. Set a name, a short key (used as the item-number prefix, e.g. `ACME-12`), priority, due date, and — for client projects — a client name.
+Use **+ New service** or the "+ New client project" / "+ New internal project" buttons. Set a name, a short key (used as the task-number prefix, e.g. `ACME-12`), priority, and due date.
 
-### Project types (category)
-Every project is one of three types, each shown in its own sidebar section and page:
-- **client** — billable client work
-- **product** — CoreKit's own product line
-- **internal** — internal, non-client company work
+### Project types
+- **Client** — work for a customer. **A client project must have a customer attached** (create one on the Customers page first, or from the new-project form).
+- **Internal** — anything not tied to a customer.
 
 Change a project's type any time from its ⚙ Settings.
 
 ### Project settings (⚙)
-Open a project's board and click **⚙ Settings** (visible to admins, dev leads on that project, and the project owner) to edit:
-- Name, description, priority, status, due date, yearly target date, owner
+Open a project's board and click **⚙ Settings** — visible to admins, leads on that project, and the project owner:
+- Name, description, priority, status, due date, owner
 - **Members** — checkboxes controlling exactly who can see this project (this is the real access-control boundary, independent of the Access Control page)
-- **Client info** — client name, contact person, phone, email
-- **Documents, images & videos** — upload files here (25 MB max each); anyone who can see the project can view/download them; only admins or the uploader can delete
-- **Showcase link** — generate a public, read-only link to this project (§7)
-
-### Client-wise grouping
-The Clients page automatically groups project cards under a heading per distinct client name (projects with no client name set land under "Unassigned client").
+- **Customer** — which customer a client project belongs to
+- **Notifications** — per-type toggles for in-app and email alerts (added to project, assigned, status change, comment, file)
+- **Files** — a full folder tree for this project (§6)
 
 ---
 
-## 5. Kanban board
+## 5. The board
 
-Open any project from the sidebar or its card to see its board: **Backlog → In Progress → In Review → Done**.
+Open any project to see its board: **To Do → In Progress → In Review → Done**.
 
 - **Drag and drop** a card between columns to change its status.
-- **+ New item** creates a Story, Issue, or Bug.
-- Filter by type (chips), assignee (dropdown), or free-text search.
+- **+ New task** creates a task *(LEAD and above — teammates work tasks, leads hand them out)*.
+- Filter by assignee or free-text search.
 - On mobile, the board becomes one column at a time with a tab strip.
 
-### The item drawer
+### The task drawer
 Click any card to open its full detail drawer:
 - **Details** — title & description
-- **Triage** — type, status, priority, points, due date, module
-- **People** — assignee and reporter
-- **Attachments** — upload/download files scoped to this item
+- **Properties** — status, priority, due date, and a free-text **Tag** for grouping (e.g. Finance, Onboarding)
+- **People** — assignee *(leads only)* and who created it
+- **Attachments** — upload/download files scoped to this task (25 MB each)
 - **Comments** — text or pasted/attached screenshots
 - **History** — a full audit trail of every change
 
 ---
 
-## 6. Dashboards
+## 6. Files
 
-- **My Dashboard** — your open items, what's due this week, your overdue count, and your all-time done count.
-- **Command** (leads/admins) — team load per person, project health by status, an effort scoreboard (points earned minus delay/rework penalties), and a list of critical items (badly delayed or churning).
+Every **project** and every **customer** has its own file area with nested folders:
+
+- Create folders, upload files (25 MB each), rename, move, copy/paste, and multi-select.
+- Drag items onto a folder to move them.
+- Anyone who can see the project can view and download; only admins or whoever created an item can delete it.
+- Writing to a **customer's** files requires LEAD or above.
 
 ---
 
-## 7. Showcase links (share without a login)
+## 7. Dashboards
 
-Two kinds of public, read-only links — anyone with the link can open it, no account needed:
+- **My Dashboard** — your open tasks, what's due this week, your overdue count, and your all-time done count.
+- **Admin Dashboard** — team load per person, project health by status, an **effort scoreboard** (tasks finished minus delay and reopen penalties), and a list of critical tasks.
 
-- **Project showcase** — generate it from a project's ⚙ Settings → "Showcase link". Shows the project's status, priority, due date, a **read-only kanban board** of its items, and any images/videos attached to the project. No comments, history, or internal notes are exposed.
-- **Person showcase** — generate it from the Team page → "showcase link" next to any user. Shows their display name, role, the projects they've worked on, how many items they've shipped, and their effort score. Useful for a portfolio-style summary you can send externally.
-
-Both links can be **revoked** at any time (project) or **regenerated** (person), which invalidates the old URL immediately.
+A task is flagged **critical** when it has been reopened twice or more, or is running/finished more than 7 days late.
 
 ---
 
 ## 8. Access Control (RBAC) — admin only
 
-Under **Access Control**, admins set which roles (USER / DEV / DEVLEAD / ADMIN) can see each top-level section: Dashboard, Command, Product Lab, Clients, Internal Works, Team.
+Under **Access Control**, admins set which roles (TEAMMATE / LEAD / ADMIN / SUPERADMIN) can reach each top-level section: Dashboard, All Tasks, Admin Dashboard, Client Projects, Internal Projects, Customers, User Management.
 
 - Check a box to grant a role access to that section's nav link and page.
-- **ADMIN is always checked and can't be unchecked** — this prevents accidentally locking every admin out of the app.
-- Click **Save changes** to apply immediately — affected users will stop seeing that nav item (and get redirected to Dashboard if they try to visit the page directly) next time they load or navigate the app.
+- **SUPERADMIN is always granted and can't be removed** — this prevents locking every superadmin out of the app.
+- Changes apply immediately — affected users stop seeing that nav item, and get redirected to Dashboard if they visit the page directly.
 
-**Important:** this only controls *which sections of the app* a role can navigate to. It does **not** override per-project membership — a DEV who isn't a member of Project X still can't see Project X's board or tasks, even if their role has access to the Clients page in general.
+**Important:** this only controls *which sections* a role can navigate to. It does **not** override per-project membership — a teammate who isn't a member of Project X still can't see Project X's board or tasks, even if their role has access to the Client Projects page in general.
 
 ---
 
-## 9. Team management — admin only
+## 9. User management — admin only
 
-From the **Team** page:
+From **User Management**:
 - **+ Add user** — create an account with a role; leave the password blank to send a set-password invite link (emailed if the user has an email on file, otherwise share the link manually).
-- **edit** — change display name, email, role, or force a new password.
-- **reset pw** — generate a one-time password reset link for that user.
-- **showcase link** — generate/copy that user's person-showcase link.
+- **edit** — change display name, email, or role.
+- **reset pw** — generate a one-time password reset link *(superadmin only)*.
 - **disable / enable** — block or restore login access without deleting the account.
-- **delete** — permanently remove a user (blocked if they have linked stories/comments/files — disable instead, or reassign their work first).
+- **delete** *(superadmin only)* — permanently remove a user. Blocked if they have linked tasks, comments or files — disable instead, or reassign their work first.
+
+Nobody can edit an account that outranks them, or grant a role above their own.
 
 ---
 
 ## 10. Notifications
 
-The bell icon (top right) shows unread notifications — new assignments, comments, attachments, and being added to a project. Click a notification to jump straight to that item. Notifications also arrive by email if the recipient has an email address on file and outbound mail is configured on the server.
+The bell icon (top right) shows unread notifications — new assignments, comments, attachments, status changes, and being added to a project. Click one to jump straight to that task. Notifications also arrive by email if the recipient has an email address on file and outbound mail is configured. Turn any type off per project under ⚙ Settings → Notifications.
 
 ---
 
@@ -142,6 +143,6 @@ The tracker is an installable Progressive Web App — on desktop Chrome/Edge, us
 
 ## 12. Tips
 
-- Only admins see every project by default; ask an admin to add you as a member on ⚙ Settings if you're missing a project.
-- Use the yearly target date on Product Lab projects to track annual build plans — the progress bar and suggestions update automatically from item status.
-- A project can be deleted only if it has no items (unless you're an admin, in which case it cascades and removes everything — items, comments, files).
+- Only admins see every project by default; ask an admin to add you as a member under ⚙ Settings if a project is missing.
+- Use the **Tag** field to slice tasks across a project (department, workstream, client area) — it's free text and shows up in search.
+- A project can only be deleted by an admin, and deleting one cascades: its tasks, comments and files all go with it.

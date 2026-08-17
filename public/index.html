@@ -54,7 +54,7 @@ html{
   background-attachment:fixed;
 }
 /* frosted-glass surfaces: blur whatever marble/content sits behind them */
-aside,.topbar,.tile,.block,.block .bhead,th,.pcard,.rolecard,
+aside,.topbar,.tile,.block,.block .bhead,th,.pcard,
 .kcol,.kcol .khead,.card,.dsec,.dsec-h,.ndrop,.modal,.modal .mhead,.modal .mfoot,
 .drawer,.drawer .dhead,.drawer .dfoot,.dtabs,.login,.fchip,.bigpanel,.fm,.fm-head,button:not(.bare){
   backdrop-filter:blur(var(--blur));-webkit-backdrop-filter:blur(var(--blur));
@@ -153,6 +153,7 @@ td.mono{font-size:11.5px}
 .stamp.Medium{background:var(--orange-tint);color:#8a4300}
 .stamp.Low{background:var(--paper2);color:var(--dim)}
 .stamp.Done{background:var(--ink);color:#fff}
+.rlock{font-size:10px;opacity:.6}
 .stamp.ToDo{background:var(--paper2);color:var(--dim)}
 .stamp.InProgress{background:var(--orange-tint);color:#8a4300}
 .stamp.InReview{background:var(--blue-tint);color:#1D5BB8}
@@ -253,19 +254,6 @@ td.mono{font-size:11.5px}
 .login .tag{font-family:var(--sans);font-size:12px;color:var(--dim);margin:8px 0 4px;text-transform:none;letter-spacing:0}
 
 /* ---- roles ---- */
-.rolegrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-bottom:22px}
-.rolecard{background:var(--white);border:var(--bd);box-shadow:var(--shadow);border-radius:var(--radius);padding:16px 18px}
-.rolecard .rc-top{display:flex;align-items:baseline;gap:10px}
-.rolecard h3{font-size:15px;font-weight:700}
-.rolecard .rc-key{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.04em;background:var(--paper2);color:var(--dim);padding:2px 8px;border-radius:5px}
-.rolecard .rc-n{margin-left:auto;font-size:12px;color:var(--dim)}
-.rolecard .rc-blurb{font-size:12.5px;color:var(--dim);margin-top:6px;min-height:34px}
-.rolecard ul{list-style:none;margin-top:10px}
-.rolecard li{font-size:12px;padding:2px 0 2px 18px;position:relative;color:var(--ink)}
-.rolecard li::before{content:"✓";position:absolute;left:2px;color:var(--accent);font-weight:700}
-.rolecard li.no{color:var(--dim)}
-.rolecard li.no::before{content:"✕";color:var(--red)}
-.rolecard .rc-pages{margin-top:12px;border-top:1px solid var(--line);padding-top:10px;display:flex;flex-wrap:wrap;gap:5px}
 
 /* ---- split view: details / board on the left, file manager on the right ---- */
 .split{display:grid;grid-template-columns:40% 60%;gap:16px;align-items:start}
@@ -396,11 +384,22 @@ const isPast=(d)=>d&&new Date(d)<new Date(new Date().toDateString());
 let ME=null, USERS=[], PROJECTS=[], TASKS=[], NOTIFS=[], BOARD_STORIES=[], BOARD_CRIT=new Map(), RBAC={}, CUSTOMERS=[];
 let FILTER={assignee:"",q:""};
 let BOARD_WIDE=false; // true = kanban takes the full width, file manager hidden
-// role ladder — each rung inherits everything below it
-const ROLES=["TEAMMATE","LEAD","ADMIN","SUPERADMIN"];
-const ROLE_LABEL={TEAMMATE:"Teammate",LEAD:"Lead",ADMIN:"Admin",SUPERADMIN:"Superadmin"};
-const RANK=Object.fromEntries(ROLES.map((r,i)=>[r,i+1]));
+// role ladder — the four built-in rungs plus any custom role, which inherits
+// the rank of the rung it's based on. Filled from /api/roles at boot.
+const BUILTIN_ROLES=["TEAMMATE","LEAD","ADMIN","SUPERADMIN"];
+let ROLE_DEFS=[], ROLES=[...BUILTIN_ROLES],
+    ROLE_LABEL={TEAMMATE:"Teammate",LEAD:"Lead",ADMIN:"Admin",SUPERADMIN:"Superadmin"},
+    RANK=Object.fromEntries(BUILTIN_ROLES.map((r,i)=>[r,i+1]));
+function applyRoles(defs){
+  if(!defs?.length) return;
+  ROLE_DEFS=defs;
+  ROLES=defs.map(d=>d.role);
+  ROLE_LABEL=Object.fromEntries(defs.map(d=>[d.role,d.label]));
+  RANK=Object.fromEntries(defs.map(d=>[d.role,d.rank]));
+}
 const can=(role)=>!!ME&&(RANK[ME.role]||0)>=RANK[role];
+// true when the signed-in user outranks (or equals) this role, so may edit it
+const myRole=(role)=>(RANK[ME?.role]||0)>=(RANK[role]||0);
 const isLead=()=>can("LEAD");
 const canSeePage=(page)=>ME&&(can("SUPERADMIN")||(RBAC[page]||[]).includes(ME.role));
 
@@ -424,7 +423,8 @@ function route(){
   if(h.startsWith("#/customers")) return {view:"customers"};
   if(h.startsWith("#/command")) return {view:"command"};
   if(h.startsWith("#/team")) return {view:"team"};
-  if(h.startsWith("#/roles")||h.startsWith("#/access")) return {view:"roles"};
+  if(h.startsWith("#/pages")||h.startsWith("#/access")) return {view:"pages"};
+  if(h.startsWith("#/roles")) return {view:"roles"};
   return {view:"dashboard"};
 }
 window.addEventListener("hashchange",()=>render());
@@ -436,7 +436,9 @@ async function boot(){
   const users=await api("/api/users");
   ME=users.find(u=>u.username===st.username);
   USERS=users.filter(u=>u.enabled);
-  [PROJECTS,RBAC,CUSTOMERS]=await Promise.all([api("/api/projects"),api("/api/rbac").catch(()=>({})),api("/api/customers").catch(()=>[])]);
+  let roleDefs;
+  [PROJECTS,RBAC,CUSTOMERS,roleDefs]=await Promise.all([api("/api/projects"),api("/api/rbac").catch(()=>({})),api("/api/customers").catch(()=>[]),api("/api/roles").catch(()=>[])]);
+  applyRoles(roleDefs); // before anything renders — nav and gating depend on it
   await refreshNotifs();
   render();
 }
@@ -457,7 +459,7 @@ function render(){
   const r=r0;
   const unread=NOTIFS.filter(n=>!n.read).length;
   const boardProject=r.view==="board"?PROJECTS.find(p=>p.id===r.projectId):null;
-  const titles={dashboard:"My Dashboard",tasks:"All Tasks",command:"Admin Dashboard",clients:"Client Projects",internal:"Internal Projects",customers:"Customers",team:"User Management",roles:"Page Permission",board:boardProject?.name||"Board"};
+  const titles={dashboard:"My Dashboard",tasks:can("LEAD")?"All Tasks":"My Tasks",command:"Admin Dashboard",clients:"Client Projects",internal:"Internal Projects",customers:"Customers",team:"User Management",roles:"Roles",pages:"Page Permission",board:boardProject?.name||"Board"};
   app.innerHTML=`
   <div class="shell">
     <aside>
@@ -466,7 +468,7 @@ function render(){
       <nav>${[
         {label:"Work",links:[
           canSeePage("dashboard")&&{view:"dashboard",href:"#/dashboard",text:"Dashboard"},
-          canSeePage("tasks")&&{view:"tasks",href:"#/tasks",text:"All Tasks"},
+          canSeePage("tasks")&&{view:"tasks",href:"#/tasks",text:can("LEAD")?"All Tasks":"My Tasks"},
           canSeePage("command")&&{view:"command",href:"#/command",text:"Admin Dashboard"},
         ]},
         {label:"Services",links:[
@@ -476,7 +478,8 @@ function render(){
         ]},
         {label:"Admin",links:[
           canSeePage("team")&&{view:"team",href:"#/team",text:"User Management"},
-          can("ADMIN")&&{view:"roles",href:"#/roles",text:"Page Permission"},
+          can("ADMIN")&&{view:"roles",href:"#/roles",text:"Roles"},
+          can("ADMIN")&&{view:"pages",href:"#/pages",text:"Page Permission"},
         ]},
       ].map(g=>{
         const links=g.links.filter(Boolean);
@@ -505,7 +508,7 @@ function render(){
   <div class="drawer" id="drawer"></div>
   <div class="modal" id="modal"></div>
   <div class="bigpanel" id="bigpanel"></div>`;
-  if(r.view!=="board"&&r.view!=="roles"&&!canSeePage(r.view)){location.hash="#/dashboard";return;}
+  if(r.view!=="board"&&r.view!=="roles"&&r.view!=="pages"&&!canSeePage(r.view)){location.hash="#/dashboard";return;}
   if(r.view==="dashboard") renderDashboard();
   else if(r.view==="tasks") renderTasks();
   else if(r.view==="command") renderCommand();
@@ -513,7 +516,8 @@ function render(){
   else if(r.view==="internal") renderInternal();
   else if(r.view==="customers") renderCustomers();
   else if(r.view==="team") renderTeam();
-  else if(r.view==="roles"){if(!can("ADMIN")){location.hash="#/dashboard";return;}renderRoles();}
+  else if(r.view==="pages"){if(!can("ADMIN")){location.hash="#/dashboard";return;}renderPages();}
+  else if(r.view==="roles"){if(!can("ADMIN")){location.hash="#/dashboard";return;}renderRoleDefs();}
   else renderBoard(r.projectId);
 }
 function closePanels(){$("#overlay")?.classList.remove("open");$("#drawer")?.classList.remove("open");$("#modal")?.classList.remove("open");$("#bigpanel")?.classList.remove("open");$("aside")?.classList.remove("open");}
@@ -645,8 +649,8 @@ function taskFilterDrawer(){
         ${customersInUse.map(c=>`<option value="${c.id}" ${String(TASK_FILTER.customer)===String(c.id)?"selected":""}>${esc(c.customerNumber)} — ${esc(c.name)}</option>`).join("")}</select>
       <label>Project</label><select id="tfProject"><option value="">All projects</option>
         ${PROJECTS.map(p=>`<option value="${p.id}" ${String(TASK_FILTER.project)===String(p.id)?"selected":""}>${esc(p.key)} — ${esc(p.name)}</option>`).join("")}</select>
-      <label>Assignee</label><select id="tfAssignee"><option value="">Everyone</option>
-        ${USERS.map(u=>`<option value="${u.id}" ${String(TASK_FILTER.assignee)===String(u.id)?"selected":""}>${esc(u.displayName)}</option>`).join("")}</select>
+      ${can("LEAD")?`<label>Assignee</label><select id="tfAssignee"><option value="">Everyone</option>
+        ${USERS.map(u=>`<option value="${u.id}" ${String(TASK_FILTER.assignee)===String(u.id)?"selected":""}>${esc(u.displayName)}</option>`).join("")}</select>`:""}
       <label>Status</label><select id="tfStatus"><option value="">Any status</option>
         ${STATUSES.map(s=>`<option ${TASK_FILTER.status===s?"selected":""}>${s}</option>`).join("")}</select>
       <label>Search</label><input type="search" id="tfQ" placeholder="Title, number, tag…" value="${esc(TASK_FILTER.q)}">
@@ -654,7 +658,7 @@ function taskFilterDrawer(){
   </div>
   <div class="dfoot"><button class="bare" id="tfClear">Clear all</button><button class="primary" id="tfApply">Apply</button></div>`;
   d.classList.add("open");$("#overlay").classList.add("open");
-  const readForm=()=>({customer:$("#tfClient").value,project:$("#tfProject").value,assignee:$("#tfAssignee").value,status:$("#tfStatus").value,q:$("#tfQ").value});
+  const readForm=()=>({customer:$("#tfClient").value,project:$("#tfProject").value,assignee:$("#tfAssignee")?.value||"",status:$("#tfStatus").value,q:$("#tfQ").value});
   $("#tfApply").onclick=()=>{TASK_FILTER=readForm();TASK_PAGE=1;closePanels();paintTasks();updateTaskFilterBtn();};
   $("#tfClear").onclick=()=>{TASK_FILTER={customer:"",project:"",assignee:"",status:"",q:""};TASK_PAGE=1;closePanels();paintTasks();updateTaskFilterBtn();};
 }
@@ -665,10 +669,12 @@ function updateTaskFilterBtn(){
 let paintTasks=()=>{};
 async function renderTasks(){
   TASKS=await api("/api/tasks"); // server-side scoped to my visibility
+  // teammates get their own queue here, not the whole project's list
+  if(!can("LEAD")) TASKS=TASKS.filter(s=>s.assignedTo?.id===ME.id);
   $("#tbActions").innerHTML=`<input type="search" id="tfQuickQ" placeholder="Search tasks…" value="${esc(TASK_FILTER.q)}">
     <button id="tfOpenBtn" data-act="open-task-filter">${taskFilterCount()?`Filter (${taskFilterCount()})`:"Filter"}</button>`;
   $("#tfQuickQ").oninput=(e)=>{TASK_FILTER.q=e.target.value;TASK_PAGE=1;paintTasks();};
-  $("#main").innerHTML=`<div class="block"><div class="bhead"><h2>Tasks</h2><div class="note" id="tfCount"></div></div>
+  $("#main").innerHTML=`<div class="block"><div class="bhead"><h2>${can("LEAD")?"Tasks":"My Tasks"}</h2><div class="note" id="tfCount"></div></div>
     <div id="tfBody"></div>
     <div id="tfPager" style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-top:var(--bd)"></div></div>`;
   paintTasks=()=>{
@@ -1569,7 +1575,7 @@ function userModal(){
     <label>Display name</label><input id="un">
     <label>Username (login handle)</label><input id="uu" placeholder="e.g. viral">
     <label>Email (invites &amp; password resets go here)</label><input id="ue" type="email" placeholder="name@company.com">
-    <label>Role</label><select id="ur">${ROLES.filter(r=>RANK[r]<=RANK[ME.role]).map(r=>`<option value="${r}">${ROLE_LABEL[r]}</option>`).join("")}</select>
+    <label>Role</label><select id="ur">${ROLES.filter(r=>RANK[r]<RANK.SUPERADMIN&&RANK[r]<=RANK[ME.role]).map(r=>`<option value="${r}">${ROLE_LABEL[r]}</option>`).join("")}</select>
     ${can("SUPERADMIN")?`<label>Password (optional — leave blank to send a set-password invite)</label><input id="up" type="text" placeholder="blank = invite link">`
       :`<div style="font-size:11.5px;color:var(--dim);margin-top:14px">They'll get an invite link to set their own password — only a superadmin can set one directly.</div>`}
     <div class="formerr" id="uerr"></div></div>
@@ -1598,63 +1604,89 @@ function inviteModal(u){
   $("#idone").onclick=()=>{closePanels();renderTeam();};
 }
 
-// ---------- roles & access (admin) ----------
-// One page for the whole role task: what each role means, who holds it, which
-// pages it can reach, and inline reassignment of any person's role.
+// ---------- page permission (admin) ----------
+// Just the access matrix: which roles can open which section. Assigning a
+// person's role lives on User Management, so it isn't duplicated here.
 const RBAC_PAGE_LABELS={dashboard:"Dashboard",tasks:"All Tasks",command:"Admin Dashboard",clients:"Client Projects",internal:"Internal Projects",customers:"Customers",team:"User Management"};
-const RBAC_ROLES=ROLES;
-async function renderRoles(){
-  const [roles,people]=await Promise.all([api("/api/roles"),api("/api/users")]);
+function renderPages(){
+  // a role you don't outrank is shown but locked — an admin can see that
+  // superadmins have access without being able to change it
+  const locked=(role)=>role==="SUPERADMIN"||!myRole(role);
   $("#main").innerHTML=`
-  <div class="rolegrid">${roles.map(r=>`
-    <div class="rolecard">
-      <div class="rc-top"><h3>${esc(r.label)}</h3><span class="rc-key">${esc(r.role)}</span>
-        <span class="rc-n">${r.activeCount} active${r.userCount!==r.activeCount?` · ${r.userCount-r.activeCount} disabled`:""}</span></div>
-      <div class="rc-blurb">${esc(r.blurb)}</div>
-      <ul>${r.can.slice(0,5).map(t=>`<li>${esc(t)}</li>`).join("")}
-        ${r.cannot.slice(0,3).map(t=>`<li class="no">${esc(t)}</li>`).join("")}</ul>
-      <div class="rc-pages">${r.pages.map(p=>`<span class="stamp">${esc(RBAC_PAGE_LABELS[p]||p)}</span>`).join("")||'<span class="rc-n">no pages</span>'}</div>
-    </div>`).join("")}</div>
-
-  <div class="grid2">
-    <div class="block"><div class="bhead"><h2>Page permission</h2><div class="note">which roles can open which section — superadmins always have full access</div></div>
-    <div class="bpad">
-    <table><thead><tr><th>Page</th>${RBAC_ROLES.map(r=>`<th style="text-align:center">${ROLE_LABEL[r]}</th>`).join("")}</tr></thead><tbody>
-    ${Object.keys(RBAC_PAGE_LABELS).map(page=>`<tr>
-      <td><b>${esc(RBAC_PAGE_LABELS[page])}</b></td>
-      ${RBAC_ROLES.map(role=>`<td style="text-align:center">
-        <input type="checkbox" data-rbac="${page}" data-role="${role}" style="width:auto"
-          ${role==="SUPERADMIN"?"checked disabled":(RBAC[page]||[]).includes(role)?"checked":""}></td>`).join("")}
-      </tr>`).join("")}
-    </tbody></table>
-    <div class="formerr" id="rbacerr"></div>
-    <div style="margin-top:16px"><button class="primary" id="rbacsave">Save page access</button></div>
-    </div></div>
-
-    <div class="block"><div class="bhead"><h2>Who holds what</h2><div class="note">change a role here — it applies immediately</div></div>
-    <table class="tbl-compact"><thead><tr><th>Person</th><th>Username</th><th>Role</th></tr></thead><tbody>
-    ${people.map(u=>`<tr style="${u.enabled?"":"opacity:.45"}">
-      <td><b>${esc(u.displayName)}</b>${u.enabled?"":" <span class='stamp'>disabled</span>"}</td>
-      <td class="mono" data-l="Username">${esc(u.username)}</td>
-      <td data-l="Role"><select data-rolefor="${u.id}" style="width:auto" ${u.id===ME.id||RANK[u.role]>RANK[ME.role]?"disabled":""}>
-        ${ROLES.filter(r=>RANK[r]<=RANK[ME.role]||r===u.role).map(r=>`<option value="${r}" ${u.role===r?"selected":""}>${ROLE_LABEL[r]}</option>`).join("")}</select></td>
-    </tr>`).join("")}</tbody></table></div>
-  </div>`;
+  <div class="block"><div class="bhead"><h2>Page permission</h2><div class="note">which roles can open which section — superadmins always have full access</div></div>
+  <div class="bpad">
+  <div style="overflow-x:auto">
+  <table><thead><tr><th>Page</th>${ROLES.map(r=>`<th style="text-align:center">${esc(ROLE_LABEL[r]||r)}${locked(r)?' <span class="rlock" title="You can\'t change a role that outranks you">🔒</span>':""}</th>`).join("")}</tr></thead><tbody>
+  ${Object.keys(RBAC_PAGE_LABELS).map(page=>`<tr>
+    <td><b>${esc(RBAC_PAGE_LABELS[page])}</b></td>
+    ${ROLES.map(role=>`<td style="text-align:center">
+      <input type="checkbox" data-rbac="${page}" data-role="${role}" style="width:auto"
+        ${locked(role)?`disabled ${role==="SUPERADMIN"||(RBAC[page]||[]).includes(role)?"checked":""}`:(RBAC[page]||[]).includes(role)?"checked":""}></td>`).join("")}
+    </tr>`).join("")}
+  </tbody></table></div>
+  <div class="formerr" id="rbacerr"></div>
+  <div style="margin-top:16px"><button class="primary" id="rbacsave">Save page access</button></div>
+  </div></div>`;
   $("#rbacsave").onclick=async()=>{
     const body={};
     for(const page of Object.keys(RBAC_PAGE_LABELS)){
-      body[page]=RBAC_ROLES.filter(role=>role==="SUPERADMIN"||$(`[data-rbac="${page}"][data-role="${role}"]`).checked);
+      // only send roles you may manage; the server keeps the rest as they were
+      body[page]=ROLES.filter(role=>!locked(role)&&$(`[data-rbac="${page}"][data-role="${role}"]`).checked);
     }
-    try{RBAC=await api("/api/rbac",{method:"PUT",body:JSON.stringify(body)});renderRoles();}
+    try{RBAC=await api("/api/rbac",{method:"PUT",body:JSON.stringify(body)});renderPages();}
     catch(e){$("#rbacerr").textContent=e.message;}
   };
-  $$("[data-rolefor]").forEach(sel=>sel.onchange=async()=>{
-    try{
-      await api("/api/users/"+sel.dataset.rolefor,{method:"PUT",body:JSON.stringify({role:sel.value})});
-      USERS=(await api("/api/users")).filter(u=>u.enabled);
-      renderRoles();
-    }catch(e){alert(e.message);renderRoles();}
+}
+
+// ---------- roles (admin) ----------
+async function renderRoleDefs(){
+  applyRoles(await api("/api/roles"));
+  const editable=(d)=>!d.builtin&&myRole(d.role);
+  $("#tbActions").innerHTML=`<button class="primary" id="newRole">+ New role</button>`;
+  $("#main").innerHTML=`
+  <div class="block"><div class="bhead"><h2>Roles</h2><div class="note">a custom role copies one of the four built-in rungs and inherits its permissions — page access is set on Page Permission</div></div>
+  <div style="overflow-x:auto"><table class="tbl-compact"><thead><tr>
+    <th>Role</th><th>Name</th><th>Based on</th><th>People</th><th>Pages</th><th></th></tr></thead><tbody>
+  ${ROLE_DEFS.map(d=>`<tr>
+    <td><b>${esc(d.label)}</b>${d.builtin?' <span class="stamp">built-in</span>':""}</td>
+    <td class="mono" data-l="Name" style="font-size:11px">${esc(d.role)}</td>
+    <td data-l="Based on">${esc(ROLE_LABEL[d.baseRole]||d.baseRole)}</td>
+    <td class="mono" data-l="People">${d.userCount||"—"}${d.userCount!==d.activeCount?` (${d.activeCount} active)`:""}</td>
+    <td data-l="Pages">${d.pages.length?d.pages.map(p=>`<span class="stamp">${esc(RBAC_PAGE_LABELS[p]||p)}</span>`).join(" "):'<span style="color:var(--dim)">none</span>'}</td>
+    <td style="text-align:right;white-space:nowrap">${editable(d)
+      ? `<button class="bare" data-redit="${esc(d.role)}">edit</button> <button class="bare" data-rdel="${esc(d.role)}">delete</button>`
+      : `<span style="color:var(--dim);font-size:11px">${d.builtin?"fixed":"outranks you"}</span>`}</td>
+  </tr>`).join("")}</tbody></table></div></div>`;
+  $("#newRole").onclick=()=>roleModal(null);
+  $$("[data-redit]").forEach(b=>b.onclick=()=>roleModal(ROLE_DEFS.find(d=>d.role===b.dataset.redit)));
+  $$("[data-rdel]").forEach(b=>b.onclick=async()=>{
+    if(!confirm(`Delete the role "${b.dataset.rdel}"? People must be moved off it first.`)) return;
+    try{await api("/api/roles/"+b.dataset.rdel,{method:"DELETE"});renderRoleDefs();}
+    catch(e){alert(e.message);}
   });
+}
+
+function roleModal(def){
+  const bases=BUILTIN_ROLES.filter(r=>myRole(r)); // can't base a role on one above you
+  const m=$("#modal");
+  m.innerHTML=`<div class="mhead">${def?"Edit role":"New role"}</div><div class="mbody">
+    <label>Display name</label><input id="rlLabel" value="${esc(def?.label||"")}" placeholder="e.g. Accountant">
+    ${def?`<label>Name</label><input value="${esc(def.role)}" disabled>`
+        :`<label>Name (stored on the account — letters, numbers, underscore)</label><input id="rlName" placeholder="e.g. ACCOUNTANT">`}
+    <label>Based on</label><select id="rlBase">${bases.map(r=>`<option value="${r}" ${(def?.baseRole||"TEAMMATE")===r?"selected":""}>${esc(ROLE_LABEL[r]||r)}</option>`).join("")}</select>
+    <div style="font-size:11.5px;color:var(--dim);margin-top:10px">It gets exactly the permissions of the rung it's based on. A new role also starts with that rung's page access, which you can change on Page Permission.</div>
+    <div class="formerr" id="rlErr"></div></div>
+  <div class="mfoot"><button data-act="close">Cancel</button><button class="primary" id="rlSave">${def?"Save":"Create role"}</button></div>`;
+  m.classList.add("open");$("#overlay").classList.add("open");
+  $("#rlSave").onclick=async()=>{
+    const body={label:$("#rlLabel").value,baseRole:$("#rlBase").value};
+    if(!def) body.name=$("#rlName").value;
+    try{
+      await api(def?"/api/roles/"+def.role:"/api/roles",{method:def?"PUT":"POST",body:JSON.stringify(body)});
+      RBAC=await api("/api/rbac");
+      closePanels();renderRoleDefs();
+    }catch(e){$("#rlErr").textContent=e.message;}
+  };
 }
 
 boot();

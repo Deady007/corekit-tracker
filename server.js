@@ -56,9 +56,29 @@ function loginFailed(key) {
 //   LEAD       + create & assign tasks, create projects and customers
 //   ADMIN      + create and edit users, see every project, delete work items
 //   SUPERADMIN + set/reset passwords and delete users
-const ROLES = ["TEAMMATE", "LEAD", "ADMIN", "SUPERADMIN"];
-const RANK = Object.fromEntries(ROLES.map((r, i) => [r, i + 1]));
-const atLeast = (user, role) => (RANK[user?.role] || 0) >= RANK[role];
+const BUILTIN_ROLES = ["TEAMMATE", "LEAD", "ADMIN", "SUPERADMIN"];
+const BUILTIN_LABELS = { TEAMMATE: "Teammate", LEAD: "Lead", ADMIN: "Admin", SUPERADMIN: "Superadmin" };
+
+// A custom role pins itself to one of the four rungs and inherits its rank, so
+// every atLeast() check below keeps working without knowing custom roles exist.
+// Cached because rankOf() runs on nearly every request; CRUD clears it.
+let ROLE_CACHE = null;
+function roleDefs() {
+  if (!ROLE_CACHE) {
+    ROLE_CACHE = [
+      ...BUILTIN_ROLES.map((r, i) => ({ role: r, label: BUILTIN_LABELS[r], baseRole: r, rank: i + 1, builtin: true })),
+      ...db.prepare("SELECT name, label, baseRole FROM custom_roles ORDER BY name").all()
+        .filter((c) => BUILTIN_ROLES.includes(c.baseRole))
+        .map((c) => ({ role: c.name, label: c.label, baseRole: c.baseRole,
+          rank: BUILTIN_ROLES.indexOf(c.baseRole) + 1, builtin: false })),
+    ];
+  }
+  return ROLE_CACHE;
+}
+const invalidateRoles = () => { ROLE_CACHE = null; };
+const roleNames = () => roleDefs().map((r) => r.role);
+const rankOf = (role) => roleDefs().find((r) => r.role === role)?.rank || 0;
+const atLeast = (user, role) => rankOf(user?.role) >= rankOf(role);
 const denied = (role) => ({ status: 403, json: { error: `Requires the ${role.toLowerCase()} role or higher` } });
 
 // ---------------------------------------------------------------------------
@@ -468,45 +488,27 @@ route("GET", "/api/rbac", () => ({ json: accessMap() }));
 route("PUT", "/api/rbac", (req) => {
   if (!atLeast(req.user, "ADMIN")) return denied("ADMIN");
   const body = req.body || {};
+  // you may only grant or revoke access for roles you outrank — an admin can
+  // neither add nor remove a superadmin (or any superadmin-based role), so
+  // whatever those roles already had is carried over untouched.
+  const mine = (r) => rankOf(r) <= rankOf(req.user.role);
+  const current = accessMap();
   const upsert = db.prepare("INSERT INTO page_access (page, roles) VALUES (?,?) ON CONFLICT(page) DO UPDATE SET roles=excluded.roles");
   for (const page of RBAC_PAGES) {
     if (!(page in body)) continue;
-    const roles = new Set((Array.isArray(body[page]) ? body[page] : []).filter((r) => ROLES.includes(r)));
+    const roles = new Set((Array.isArray(body[page]) ? body[page] : [])
+      .filter((r) => roleNames().includes(r) && mine(r)));
+    for (const r of current[page] || []) if (!mine(r)) roles.add(r);
     roles.add("SUPERADMIN"); // superadmins can never be locked out of a page
     upsert.run(page, [...roles].join(","));
   }
   return { json: accessMap() };
 });
 
-// --- roles: the fixed role ladder, what each rung can do, and who holds it.
-// Capabilities mirror the checks enforced in the routes above — this endpoint
-// describes them, it does not define them.
-const ROLE_INFO = {
-  TEAMMATE: {
-    label: "Teammate",
-    blurb: "Works the board. Sees only the projects they're on.",
-    can: ["View tasks on their projects", "Update tasks and move them across the board", "Add comments", "Use the file manager on their projects"],
-    cannot: ["Create tasks", "Assign tasks to people", "Create projects or customers", "Manage users"],
-  },
-  LEAD: {
-    label: "Lead",
-    blurb: "Runs delivery on their own projects. Still scoped to projects they're on.",
-    can: ["Everything a teammate can", "Create tasks", "Assign tasks to people", "Create projects and customers", "Edit projects they're a member of"],
-    cannot: ["See projects they're not a member of", "Delete projects, tasks or customers", "Manage users"],
-  },
-  ADMIN: {
-    label: "Admin",
-    blurb: "Manages people and sees every project.",
-    can: ["Everything a lead can", "Create users", "Edit users and assign roles", "See and edit every project", "Delete projects, tasks and files", "Set page permissions"],
-    cannot: ["Set or reset anyone's password", "Delete users", "Grant the superadmin role"],
-  },
-  SUPERADMIN: {
-    label: "Superadmin",
-    blurb: "Full control, including credentials and account removal.",
-    can: ["Everything an admin can", "Set a user's password", "Send password reset links", "Delete users", "Grant any role"],
-    cannot: [],
-  },
-};
+// --- roles: the four built-in rungs plus any custom role, which inherits the
+// rank of the rung it is based on. You can only create or edit a role you
+// outrank, so an admin can never mint a superadmin-equivalent.
+const ROLE_NAME_RE = /^[A-Z][A-Z0-9_]{1,23}$/;
 route("GET", "/api/roles", () => {
   const counts = new Map();
   for (const u of db.prepare("SELECT role, enabled FROM users").all()) {
@@ -515,12 +517,72 @@ route("GET", "/api/roles", () => {
     counts.set(u.role, c);
   }
   const access = accessMap();
-  return { json: ROLES.map((role) => ({
-    role, ...ROLE_INFO[role],
-    userCount: counts.get(role)?.total || 0,
-    activeCount: counts.get(role)?.active || 0,
-    pages: role === "SUPERADMIN" ? RBAC_PAGES : RBAC_PAGES.filter((p) => (access[p] || []).includes(role)),
+  return { json: roleDefs().map((r) => ({
+    ...r,
+    userCount: counts.get(r.role)?.total || 0,
+    activeCount: counts.get(r.role)?.active || 0,
+    pages: r.role === "SUPERADMIN" ? RBAC_PAGES : RBAC_PAGES.filter((p) => (access[p] || []).includes(r.role)),
   })) };
+});
+
+route("POST", "/api/roles", (req) => {
+  if (!atLeast(req.user, "ADMIN")) return denied("ADMIN");
+  const b = req.body || {};
+  const name = String(b.name || "").trim().toUpperCase().replace(/[^A-Z0-9_]/g, "_");
+  const label = String(b.label || "").trim();
+  const baseRole = String(b.baseRole || "");
+  if (!ROLE_NAME_RE.test(name)) return { status: 400, json: { error: "Name must be 2–24 characters, letters/numbers/underscore, starting with a letter" } };
+  if (!label) return { status: 400, json: { error: "label required" } };
+  if (!BUILTIN_ROLES.includes(baseRole)) return { status: 400, json: { error: "baseRole must be one of the built-in roles" } };
+  if (rankOf(baseRole) > rankOf(req.user.role)) return { status: 403, json: { error: `You can't base a role on ${baseRole.toLowerCase()} — it outranks you` } };
+  if (roleNames().includes(name)) return { status: 409, json: { error: "a role with that name already exists" } };
+  db.prepare("INSERT INTO custom_roles (name,label,baseRole,createdDate) VALUES (?,?,?,?)").run(name, label, baseRole, now());
+  invalidateRoles();
+  // start it with the same page access as the rung it's based on, so a new role
+  // isn't born unable to open anything
+  const access = accessMap();
+  const upsert = db.prepare("INSERT INTO page_access (page, roles) VALUES (?,?) ON CONFLICT(page) DO UPDATE SET roles=excluded.roles");
+  for (const page of RBAC_PAGES) {
+    const roles = new Set(access[page] || []);
+    if (baseRole === "SUPERADMIN" || roles.has(baseRole)) { roles.add(name); upsert.run(page, [...roles].join(",")); }
+  }
+  return { json: roleDefs().find((r) => r.role === name) };
+});
+
+route("PUT", "/api/roles/([A-Z0-9_]+)", (req, [name]) => {
+  if (!atLeast(req.user, "ADMIN")) return denied("ADMIN");
+  const def = roleDefs().find((r) => r.role === name);
+  if (!def) return { status: 404, json: { error: "not found" } };
+  if (def.builtin) return { status: 400, json: { error: "The built-in roles can't be edited — create a custom role instead" } };
+  if (rankOf(def.role) > rankOf(req.user.role)) return { status: 403, json: { error: "That role outranks you" } };
+  const b = req.body || {};
+  const label = b.label !== undefined ? String(b.label).trim() : def.label;
+  const baseRole = b.baseRole !== undefined ? String(b.baseRole) : def.baseRole;
+  if (!label) return { status: 400, json: { error: "label required" } };
+  if (!BUILTIN_ROLES.includes(baseRole)) return { status: 400, json: { error: "baseRole must be one of the built-in roles" } };
+  if (rankOf(baseRole) > rankOf(req.user.role)) return { status: 403, json: { error: `You can't base a role on ${baseRole.toLowerCase()} — it outranks you` } };
+  db.prepare("UPDATE custom_roles SET label=?, baseRole=? WHERE name=?").run(label, baseRole, name);
+  invalidateRoles();
+  return { json: roleDefs().find((r) => r.role === name) };
+});
+
+route("DELETE", "/api/roles/([A-Z0-9_]+)", (req, [name]) => {
+  if (!atLeast(req.user, "ADMIN")) return denied("ADMIN");
+  const def = roleDefs().find((r) => r.role === name);
+  if (!def) return { status: 404, json: { error: "not found" } };
+  if (def.builtin) return { status: 400, json: { error: "The built-in roles can't be deleted" } };
+  if (rankOf(def.role) > rankOf(req.user.role)) return { status: 403, json: { error: "That role outranks you" } };
+  const held = db.prepare("SELECT COUNT(*) c FROM users WHERE role=?").get(name).c;
+  if (held) return { status: 409, json: { error: `${held} user(s) still have this role — move them to another role first` } };
+  db.prepare("DELETE FROM custom_roles WHERE name=?").run(name);
+  invalidateRoles();
+  // drop it out of every page's access list
+  const upsert = db.prepare("UPDATE page_access SET roles=? WHERE page=?");
+  for (const [page, roles] of Object.entries(accessMap())) {
+    const kept = roles.filter((r) => r !== name);
+    if (kept.length !== roles.length) upsert.run(kept.join(","), page);
+  }
+  return { json: { deleted: true, role: name } };
 });
 
 // --- users
@@ -531,8 +593,8 @@ route("POST", "/api/users", async (req) => {
   if (!atLeast(req.user, "ADMIN")) return denied("ADMIN");
   const { username, displayName, role, password, email } = req.body || {};
   if (!username || !displayName) return { status: 400, json: { error: "username and displayName required" } };
-  if (role && !ROLES.includes(role)) return { status: 400, json: { error: "unknown role" } };
-  if (role && RANK[role] > RANK[req.user.role]) return { status: 403, json: { error: `You can't grant the ${role.toLowerCase()} role` } };
+  if (role && !roleNames().includes(role)) return { status: 400, json: { error: "unknown role" } };
+  if (role && rankOf(role) > rankOf(req.user.role)) return { status: 403, json: { error: `You can't grant the ${role.toLowerCase()} role` } };
   if (password && !atLeast(req.user, "SUPERADMIN")) return { status: 403, json: { error: "Only a superadmin can set a password directly — leave it blank to send an invite" } };
   if (db.prepare("SELECT 1 FROM users WHERE username=?").get(String(username).toLowerCase()))
     return { status: 409, json: { error: "username already exists" } };
@@ -561,7 +623,7 @@ route("PUT", "/api/users/(\\d+)", (req, [id]) => {
   const u = getUser(id);
   if (!u) return { status: 404, json: { error: "not found" } };
   // nobody edits an account that outranks them
-  if (!self && RANK[u.role] > RANK[req.user.role])
+  if (!self && rankOf(u.role) > rankOf(req.user.role))
     return { status: 403, json: { error: `You can't edit a ${u.role.toLowerCase()} account` } };
   const b = req.body || {};
   if (b.password) {
@@ -573,8 +635,8 @@ route("PUT", "/api/users/(\\d+)", (req, [id]) => {
   if (atLeast(req.user, "ADMIN")) {
     // and nobody hands out a role above their own
     let role = b.role ?? u.role;
-    if (!ROLES.includes(role)) role = u.role;
-    if (RANK[role] > RANK[req.user.role]) return { status: 403, json: { error: `You can't grant the ${role.toLowerCase()} role` } };
+    if (!roleNames().includes(role)) role = u.role;
+    if (rankOf(role) > rankOf(req.user.role)) return { status: 403, json: { error: `You can't grant the ${role.toLowerCase()} role` } };
     db.prepare("UPDATE users SET displayName=?, role=?, enabled=?, email=? WHERE id=?")
       .run(b.displayName ?? u.displayName, role, b.enabled != null ? (b.enabled ? 1 : 0) : u.enabled,
         b.email !== undefined ? (b.email ? String(b.email).trim().toLowerCase() : null) : u.email, u.id);

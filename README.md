@@ -13,6 +13,12 @@ A four-rung ladder, each rung inheriting everything below it:
 
 TEAMMATE and LEAD see only projects they belong to (project owner, listed member, or having a task there). ADMIN and above see everything.
 
+## Roles
+
+Four built-in rungs — TEAMMATE, LEAD, ADMIN, SUPERADMIN — each inheriting everything below it. Admins can also define **custom roles** on the Roles page: a custom role picks one of the four rungs and inherits its permissions exactly, so it needs no new permission checks. You can only create, edit or delete a role you outrank, which means an admin can never mint a superadmin-equivalent, and an admin editing Page Permission cannot add or remove access for superadmin-rank roles — their existing access is preserved untouched.
+
+Role names are immutable once created (the name is what is stored on the account); the display label can be changed. A role cannot be deleted while anyone still holds it.
+
 ## Projects, customers & files
 
 Projects are either **client** (must be attached to a customer record) or **internal**. Every project and every customer gets a file area — nested folders, upload/rename/move/copy, 25 MB per file. Files live in `data/files/`; tasks also take direct attachments and pasted screenshots on comments.
@@ -32,7 +38,7 @@ To share with the team on your LAN, run it on any machine and open `http://<that
 
 ## API
 
-`POST /api/auth/login` `{username,password}` (sets `JSESSIONID` cookie), `GET /api/auth/status`, `POST /api/auth/logout`, `POST /api/auth/forgot`, `POST /api/auth/reset`, `GET/POST/PUT/DELETE /api/users`, `GET/POST/PUT/DELETE /api/customers`, `GET/POST/PUT/DELETE /api/projects`, `GET/POST/PUT/DELETE /api/tasks` (`?projectId=`), `GET/POST /api/comments` (`?taskId=`), `GET /api/history` (`?taskId=`), `GET/POST/DELETE /api/files` (`?taskId=`), `GET/POST/PUT/DELETE /api/fs` (file manager), `GET /api/analytics`, `GET/PUT /api/rbac`, `GET /api/roles`, `GET /api/notifications/user/{id}`.
+`POST /api/auth/login` `{username,password}` (sets `JSESSIONID` cookie), `GET /api/auth/status`, `POST /api/auth/logout`, `POST /api/auth/forgot`, `POST /api/auth/reset`, `GET/POST/PUT/DELETE /api/users`, `GET/POST/PUT/DELETE /api/customers`, `GET/POST/PUT/DELETE /api/projects`, `GET/POST/PUT/DELETE /api/tasks` (`?projectId=`), `GET/POST /api/comments` (`?taskId=`), `GET /api/history` (`?taskId=`), `GET/POST/DELETE /api/files` (`?taskId=`), `GET/POST/PUT/DELETE /api/fs` (file manager), `GET /api/analytics`, `GET/PUT /api/rbac`, `GET/POST/PUT/DELETE /api/roles`, `GET /api/notifications/user/{id}`.
 
 `PUT` accepts partial objects. Sessions last 30 days of inactivity.
 

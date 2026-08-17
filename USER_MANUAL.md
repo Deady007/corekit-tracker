@@ -15,16 +15,16 @@ Go to the app URL (e.g. `https://corekit.me` or `http://localhost:4580`) and sig
 
 ## 2. Roles
 
-A four-rung ladder — each rung can do everything the rungs below it can.
+A four-rung ladder — each rung can do everything the rungs below it can. Admins can also define custom roles based on any of these rungs (§8).
 
 | Role | What it adds |
 |---|---|
 | **TEAMMATE** | View and update tasks on their projects, move them across the board, comment, use the file manager. |
 | **LEAD** | Create tasks, assign tasks to people, create projects and customers, edit projects they're a member of. |
-| **ADMIN** | Create and edit users, see and edit **every** project, delete projects/tasks/files, set page permissions. |
+| **ADMIN** | Create and edit users, see and edit **every** project, delete projects/tasks/files, manage custom roles and page permissions. |
 | **SUPERADMIN** | Set or reset passwords, send reset links, delete users, grant any role. |
 
-TEAMMATE and LEAD see only the projects they belong to (project owner, listed member, or having a task there). Project visibility is **always** enforced this way, regardless of anything set on the Access Control page (§8) — that page only controls which top-level *sections* a role can navigate to, not which individual projects or tasks they can see.
+TEAMMATE and LEAD see only the projects they belong to (project owner, listed member, or having a task there). Project visibility is **always** enforced this way, regardless of anything set on Page Permission (§8) — that page only controls which top-level *sections* a role can navigate to, not which individual projects or tasks they can see.
 
 ---
 
@@ -37,7 +37,8 @@ TEAMMATE and LEAD see only the projects they belong to (project owner, listed me
 - **Internal Projects** — non-client work (hiring, ops, admin, personal workstreams).
 - **Customers** *(LEAD and above by default)* — the customer directory and their files.
 - **User Management** *(ADMIN and above)* — manage user accounts.
-- **Access Control** *(ADMIN and above)* — role-based page permissions (§8).
+- **Roles** *(ADMIN and above)* — the role ladder and any custom roles (§8).
+- **Page Permission** *(ADMIN and above)* — which roles can open which section (§8).
 
 Below the nav, the sidebar lists every project you can see, split into Clients / Internal.
 
@@ -57,7 +58,7 @@ Change a project's type any time from its ⚙ Settings.
 ### Project settings (⚙)
 Open a project's board and click **⚙ Settings** — visible to admins, leads on that project, and the project owner:
 - Name, description, priority, status, due date, owner
-- **Members** — checkboxes controlling exactly who can see this project (this is the real access-control boundary, independent of the Access Control page)
+- **Members** — checkboxes controlling exactly who can see this project (this is the real access-control boundary, independent of Page Permission)
 - **Customer** — which customer a client project belongs to
 - **Notifications** — per-type toggles for in-app and email alerts (added to project, assigned, status change, comment, file)
 - **Files** — a full folder tree for this project (§6)
@@ -104,12 +105,25 @@ A task is flagged **critical** when it has been reopened twice or more, or is ru
 
 ---
 
-## 8. Access Control (RBAC) — admin only
+## 8. Roles & Page Permission — admin only
 
-Under **Access Control**, admins set which roles (TEAMMATE / LEAD / ADMIN / SUPERADMIN) can reach each top-level section: Dashboard, All Tasks, Admin Dashboard, Client Projects, Internal Projects, Customers, User Management.
+### Roles
+There are four built-in roles — Teammate, Lead, Admin, Superadmin — and each inherits everything the ones below it can do. They cannot be renamed or deleted.
 
-- Check a box to grant a role access to that section's nav link and page.
-- **SUPERADMIN is always granted and can't be removed** — this prevents locking every superadmin out of the app.
+On the **Roles** page you can add a **custom role**: give it a display name, a name (stored on the account, letters/numbers/underscore), and pick which built-in rung it is **based on**. It then has exactly that rung's permissions — an "Accountant" based on Lead can do everything a lead can. A new role also starts with its rung's page access, which you can then adjust.
+
+Rules worth knowing:
+- You can only create, edit or delete a role you outrank. An admin therefore cannot create a role based on Superadmin, nor edit one.
+- A role's name is fixed once created; only its display name can change.
+- A role cannot be deleted while anyone still holds it — move those people first.
+- Superadmin-rank roles are never offered when creating a user.
+
+### Page Permission
+Sets which roles can reach each top-level section: Dashboard, All Tasks, Admin Dashboard, Client Projects, Internal Projects, Customers, User Management.
+
+- Check a box to grant a role that section's nav link and page, then **Save page access**.
+- Columns for roles you don't outrank are locked (🔒) — an admin can see that superadmins have access but cannot change it. Saving never disturbs those roles' access.
+- **Superadmin always keeps full access**, so nobody can lock every superadmin out.
 - Changes apply immediately — affected users stop seeing that nav item, and get redirected to Dashboard if they visit the page directly.
 
 **Important:** this only controls *which sections* a role can navigate to. It does **not** override per-project membership — a teammate who isn't a member of Project X still can't see Project X's board or tasks, even if their role has access to the Client Projects page in general.

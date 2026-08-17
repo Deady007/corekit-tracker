@@ -180,7 +180,17 @@ CREATE INDEX IF NOT EXISTS idx_project_files_project ON project_files(projectId)
 
 CREATE TABLE IF NOT EXISTS page_access (
   page TEXT PRIMARY KEY,
-  roles TEXT NOT NULL -- comma-separated: DEV,DEVLEAD,ADMIN
+  roles TEXT NOT NULL -- comma-separated role names
+);
+
+-- custom roles. Each pins itself to one of the four built-in rungs and
+-- inherits its rank, so every atLeast() check in the server keeps working
+-- without needing to know custom roles exist.
+CREATE TABLE IF NOT EXISTS custom_roles (
+  name TEXT PRIMARY KEY,          -- what lands in users.role
+  label TEXT NOT NULL,
+  baseRole TEXT NOT NULL,         -- TEAMMATE | LEAD | ADMIN | SUPERADMIN
+  createdDate TEXT NOT NULL
 );
 
 -- per-project notification preferences. No row for a (projectId,type) pair
